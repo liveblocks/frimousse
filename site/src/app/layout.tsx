@@ -8,6 +8,7 @@ import type { PropsWithChildren } from "react";
 import { Toaster } from "sonner";
 import { DynamicMaximumScaleMeta } from "./layout.client";
 import "./styles.css";
+import { config } from "@/config";
 
 const inter = localFont({
   src: "./inter-variable.woff2",
@@ -18,17 +19,6 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
 });
-
-export const config = {
-  name: "Frimousse — An emoji picker for React",
-  url: "https://frimousse.liveblocks.io",
-  description:
-    "A lightweight, unstyled, and composable emoji picker for React. Frimousse is an open-source library that provides you with primitive components, originally created for Liveblocks Comments. Styles can be applied with CSS, Tailwind, JS-in-CSS, and more.",
-  links: {
-    twitter: "https://x.com/liveblocks",
-    github: "https://github.com/liveblocks/frimousse",
-  },
-} as const;
 
 export const metadata: Metadata = {
   title: {
