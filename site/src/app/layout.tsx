@@ -36,6 +36,9 @@ export const metadata: Metadata = {
     template: `%s — ${config.name}`,
   },
   metadataBase: new URL(config.url),
+  alternates: {
+    canonical: "/",
+  },
   description: config.description,
   keywords: [
     "emoji",
