@@ -19,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
 });
 
-const config = {
+export const config = {
   name: "Frimousse — An emoji picker for React",
   url: "https://frimousse.liveblocks.io",
   description:
