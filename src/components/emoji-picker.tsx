@@ -522,6 +522,13 @@ const EmojiPickerSearch = forwardRef<HTMLInputElement, EmojiPickerSearchProps>(
       });
     }, []);
 
+    // Handle controlled value changes
+    useLayoutEffect(() => {
+      if (typeof value === "string") {
+        store.get().onSearchChange(value);
+      }
+    }, [value]);
+
     const handleChange = useCallback(
       (event: ReactChangeEvent<HTMLInputElement>) => {
         onChange?.(event);
