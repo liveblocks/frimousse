@@ -456,14 +456,37 @@ describe("EmojiPicker.Search", () => {
         <DefaultPage
           searchOnChange={(event) => setSearch(event.target.value)}
           searchValue={search}
+        />
+      );
+    }
+
+    page.render(<Page />);
+
+    await expect.element(page.getByTestId("search")).toHaveValue("");
+
+    await page.getByTestId("search").fill("cat");
+    await expect.element(page.getByTestId("search")).toHaveValue("cat");
+    await expect.element(page.getByText("🐈")).toBeInTheDocument();
+
+    await page.getByTestId("search").fill("123456789");
+    await expect.element(page.getByTestId("search")).toHaveValue("123456789");
+    await expect.element(page.getByTestId("empty")).toBeInTheDocument();
+  });
+
+  it("should support an external controlled search value", async () => {
+    function Page() {
+      const [search, setSearch] = useState("");
+
+      return (
+        <DefaultPage
+          searchOnChange={(event) => setSearch(event.target.value)}
+          searchValue={search}
         >
-          <button
-            data-testid="update-search"
-            onClick={() => setSearch("hello")}
-            type="button"
-          >
-            Update search
-          </button>
+          <input
+            data-testid="controlled-search"
+            onChange={(event) => setSearch(event.target.value)}
+            type="text"
+          />
         </DefaultPage>
       );
     }
@@ -472,9 +495,13 @@ describe("EmojiPicker.Search", () => {
 
     await expect.element(page.getByTestId("search")).toHaveValue("");
 
-    await page.getByTestId("update-search").click();
+    await page.getByTestId("controlled-search").fill("cat");
+    await expect.element(page.getByTestId("search")).toHaveValue("cat");
+    await expect.element(page.getByText("🐈")).toBeInTheDocument();
 
-    await expect.element(page.getByTestId("search")).toHaveValue("hello");
+    await page.getByTestId("controlled-search").fill("123456789");
+    await expect.element(page.getByTestId("search")).toHaveValue("123456789");
+    await expect.element(page.getByTestId("empty")).toBeInTheDocument();
   });
 });
 
