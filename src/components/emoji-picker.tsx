@@ -509,6 +509,23 @@ const EmojiPickerSearch = forwardRef<HTMLInputElement, EmojiPickerSearchProps>(
         store.set({ searchRef: ref });
       }
     }, []);
+    const isControlled = typeof value === "string";
+    const wasControlled = useRef(isControlled);
+
+    useEffect(() => {
+      if (
+        process.env.NODE_ENV !== "production" &&
+        wasControlled.current !== isControlled
+      ) {
+        console.warn(
+          `EmojiPicker.Search is changing from ${
+            wasControlled ? "controlled" : "uncontrolled"
+          } to ${isControlled ? "controlled" : "uncontrolled"}.`,
+        );
+      }
+
+      wasControlled.current = isControlled;
+    }, [isControlled]);
 
     // Initialize search with a controlled or uncontrolled value
     useLayoutEffect(() => {
