@@ -224,7 +224,10 @@ async function fetchEmojiData(
   return emojiData;
 }
 
-function getSessionMetadata(emojis: EmojiDataEmoji[]): SessionMetadata {
+function getSessionMetadata(
+  emojis: EmojiDataEmoji[],
+  emojiVersion?: number,
+): SessionMetadata {
   const versionEmojis = new Map<number, string>();
 
   for (const emoji of emojis) {
@@ -237,6 +240,13 @@ function getSessionMetadata(emojis: EmojiDataEmoji[]): SessionMetadata {
   const highestVersion = descendingVersions[0] ?? 0;
 
   const supportsCountryFlags = isEmojiSupported("🇪🇺");
+
+  if (typeof emojiVersion === "number") {
+    return {
+      emojiVersion,
+      countryFlags: supportsCountryFlags,
+    };
+  }
 
   for (const version of descendingVersions) {
     const emoji = versionEmojis.get(version)!;
@@ -352,17 +362,12 @@ export async function getEmojiData(
   }
 
   // Set the session metadata if needed
-  sessionMetadata ??= getSessionMetadata(data.emojis);
+  sessionMetadata ??= getSessionMetadata(data.emojis, emojiVersion);
   setStorage(sessionStorage, SESSION_METADATA_KEY, sessionMetadata);
 
   // Filter out unsupported emojis
   const filteredEmojis = data.emojis.filter((emoji) => {
-    const isSupportedVersion =
-      emoji.version <= sessionMetadata.emojiVersion &&
-      emoji.version <=
-        (typeof emojiVersion === "number"
-          ? emojiVersion
-          : Number.POSITIVE_INFINITY);
+    const isSupportedVersion = emoji.version <= sessionMetadata.emojiVersion;
 
     return emoji.countryFlag
       ? isSupportedVersion && sessionMetadata.countryFlags
