@@ -22,11 +22,36 @@ describe("getEmojiData", () => {
     await expect(promise).rejects.toThrow(DOMException);
   });
 
-  it("should support a specific emoji version", async () => {
+  it("should support a specific Emoji version", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     const data = await getEmojiData({ locale: "en", emojiVersion: 5 });
 
     expect(data).toBeDefined();
     expect(data.emojis.every((emoji) => emoji.version <= 5)).toBe(true);
+
+    expect(fetchSpy.mock.calls[0]?.[0]).toEqual(
+      "https://cdn.jsdelivr.net/npm/emojibase-data@5/en/data.json",
+    );
+    expect(fetchSpy.mock.calls[1]?.[0]).toEqual(
+      "https://cdn.jsdelivr.net/npm/emojibase-data@5/en/messages.json",
+    );
+  });
+
+  it("should support a custom Emojibase URL", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const data = await getEmojiData({
+      locale: "en",
+      emojibaseUrl: "https://example.com/self-hosted-emojibase-data",
+    });
+
+    expect(data).toBeDefined();
+
+    expect(fetchSpy.mock.calls[0]?.[0]).toEqual(
+      "https://example.com/self-hosted-emojibase-data/en/data.json",
+    );
+    expect(fetchSpy.mock.calls[1]?.[0]).toEqual(
+      "https://example.com/self-hosted-emojibase-data/en/messages.json",
+    );
   });
 
   it("should save data locally", async () => {
