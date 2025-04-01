@@ -170,16 +170,31 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
   columns?: number;
 
   /**
-   * Which Emoji version to use, to manually control which
-   * emojis are visible regardless of the current browser's supported Emoji
-   * versions.
+   * Which {@link https://emojipedia.org/emoji-versions | Emoji version} to use,
+   * to manually control which emojis are visible regardless of the current
+   * browser's supported Emoji versions.
    *
    * @default The most recent version supported by the current browser
-   *
-   * @see
-   * {@link https://emojipedia.org/emoji-versions}
    */
   emojiVersion?: number;
+
+  /**
+   * The base URL of where the {@link https://emojibase.dev/docs/datasets/ | Emojibase data}
+   * should be fetched from, used as follows: `${emojibaseUrl}/${locale}/${file}.json`.
+   * (e.g. `${emojibaseUrl}/en/data.json`).
+   *
+   * The URL can be set to another CDN hosting the {@link https://www.npmjs.com/package/emojibase-data | `emojibase-data`}
+   * package and its raw JSON files, or to a self-hosted location. When self-hosting
+   * with a single locale (e.g. `en`), only that locale's directory needs to be hosted
+   * instead of the entire package.
+   *
+   * @example "https://unpkg.com/emojibase-data"
+   *
+   * @example "https://example.com/self-hosted-emojibase-data"
+   *
+   * @default "https://cdn.jsdelivr.net/npm/emojibase-data"
+   */
+  emojibaseUrl?: string;
 }
 
 export type EmojiPickerViewportProps = ComponentProps<"div">;

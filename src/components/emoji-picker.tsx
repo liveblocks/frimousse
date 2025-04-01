@@ -65,7 +65,8 @@ import { useStableCallback } from "../utils/use-stable-callback";
 
 function EmojiPickerDataHandler({
   emojiVersion,
-}: { emojiVersion: number | undefined }) {
+  emojibaseUrl,
+}: Pick<EmojiPickerRootProps, "emojiVersion" | "emojibaseUrl">) {
   const [emojiData, setEmojiData] = useState<EmojiData | undefined>(undefined);
   const store = useEmojiPickerStore();
   const locale = useSelectorKey(store, "locale");
@@ -77,7 +78,7 @@ function EmojiPickerDataHandler({
     const controller = new AbortController();
     const signal = controller.signal;
 
-    getEmojiData(locale, emojiVersion, signal)
+    getEmojiData({ locale, emojiVersion, emojibaseUrl, signal })
       .then((data) => {
         setEmojiData(data);
       })
@@ -90,7 +91,7 @@ function EmojiPickerDataHandler({
     return () => {
       controller.abort();
     };
-  }, [emojiVersion, locale]);
+  }, [emojiVersion, emojibaseUrl, locale]);
 
   useEffect(() => {
     if (!emojiData) {
@@ -143,6 +144,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
       skinTone = "none",
       onEmojiSelect = noop,
       emojiVersion,
+      emojibaseUrl,
       onFocusCapture,
       onBlurCapture,
       children,
@@ -461,7 +463,10 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
         }
       >
         <EmojiPickerStoreProvider store={store}>
-          <EmojiPickerDataHandler emojiVersion={emojiVersion} />
+          <EmojiPickerDataHandler
+            emojiVersion={emojiVersion}
+            emojibaseUrl={emojibaseUrl}
+          />
           {children}
         </EmojiPickerStoreProvider>
       </div>

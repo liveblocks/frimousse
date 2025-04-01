@@ -13,10 +13,10 @@ import { isEmojiSupported } from "../utils/is-emoji-supported";
 import { getStorage, setStorage } from "../utils/storage";
 import * as $ from "../utils/validate";
 
-const EMOJIBASE_EMOJIS_URL = (cdnUrl: string, locale: Locale) =>
-  `${cdnUrl}/${locale}/data.json`;
-const EMOJIBASE_MESSAGES_URL = (cdnUrl: string, locale: Locale) =>
-  `${cdnUrl}/${locale}/messages.json`;
+const EMOJIBASE_EMOJIS_URL = (baseUrl: string, locale: Locale) =>
+  `${baseUrl}/${locale}/data.json`;
+const EMOJIBASE_MESSAGES_URL = (baseUrl: string, locale: Locale) =>
+  `${baseUrl}/${locale}/messages.json`;
 
 const EMOJIBASE_LOCALES = [
   "bn",
@@ -63,6 +63,13 @@ export const SESSION_METADATA_KEY = "frimousse/metadata";
   _allLocalesPresent;
 }
 
+type GetEmojiDataOptions = {
+  locale: Locale;
+  emojiVersion?: number;
+  emojibaseUrl?: string;
+  signal?: AbortSignal;
+};
+
 type LocalData = {
   data: EmojiData;
   metadata: {
@@ -87,13 +94,13 @@ async function fetchEtag(url: string, signal?: AbortSignal) {
 }
 
 async function fetchEmojibaseData(
-  cdnUrl: string,
+  baseUrl: string,
   locale: Locale,
   signal?: AbortSignal,
 ) {
   const [{ emojis, emojisEtag }, { messages, messagesEtag }] =
     await Promise.all([
-      fetch(EMOJIBASE_EMOJIS_URL(cdnUrl, locale), { signal }).then(
+      fetch(EMOJIBASE_EMOJIS_URL(baseUrl, locale), { signal }).then(
         async (response) => {
           return {
             emojis: (await response.json()) as EmojibaseEmoji[],
@@ -101,7 +108,7 @@ async function fetchEmojibaseData(
           };
         },
       ),
-      fetch(EMOJIBASE_MESSAGES_URL(cdnUrl, locale), { signal }).then(
+      fetch(EMOJIBASE_MESSAGES_URL(baseUrl, locale), { signal }).then(
         async (response) => {
           return {
             messages: (await response.json()) as EmojibaseMessagesDataset,
@@ -120,13 +127,13 @@ async function fetchEmojibaseData(
 }
 
 async function fetchEmojibaseEtags(
-  cdnUrl: string,
+  baseUrl: string,
   locale: Locale,
   signal?: AbortSignal,
 ) {
   const [emojisEtag, messagesEtag] = await Promise.all([
-    fetchEtag(EMOJIBASE_EMOJIS_URL(cdnUrl, locale), signal),
-    fetchEtag(EMOJIBASE_MESSAGES_URL(cdnUrl, locale), signal),
+    fetchEtag(EMOJIBASE_EMOJIS_URL(baseUrl, locale), signal),
+    fetchEtag(EMOJIBASE_MESSAGES_URL(baseUrl, locale), signal),
   ]);
 
   return {
@@ -159,12 +166,12 @@ export function getEmojibaseSkinToneVariations(
 }
 
 async function fetchEmojiData(
-  cdnUrl: string,
+  baseUrl: string,
   locale: Locale,
   signal?: AbortSignal,
 ): Promise<EmojiData> {
   const { emojis, emojisEtag, messages, messagesEtag } =
-    await fetchEmojibaseData(cdnUrl, locale, signal);
+    await fetchEmojibaseData(baseUrl, locale, signal);
   const countryFlagsSubgroup = messages.subgroups.find(
     (subgroup) =>
       subgroup.key === "country-flag" || subgroup.key === "subdivision-flag",
@@ -312,12 +319,16 @@ const validateLocalData = $.object<LocalData>({
   }),
 });
 
-export async function getEmojiData(
-  locale: Locale,
-  emojiVersion?: number,
-  signal?: AbortSignal,
-): Promise<EmojiData> {
-  const cdnUrl = `https://cdn.jsdelivr.net/npm/emojibase-data@${typeof emojiVersion === "number" ? Math.floor(emojiVersion) : "latest"}`;
+export async function getEmojiData({
+  locale,
+  emojiVersion,
+  emojibaseUrl,
+  signal,
+}: GetEmojiDataOptions): Promise<EmojiData> {
+  const baseUrl =
+    typeof emojibaseUrl === "string"
+      ? emojibaseUrl
+      : `https://cdn.jsdelivr.net/npm/emojibase-data@${typeof emojiVersion === "number" ? Math.floor(emojiVersion) : "latest"}`;
   let sessionMetadata = getStorage<SessionMetadata>(
     sessionStorage,
     SESSION_METADATA_KEY,
@@ -333,7 +344,7 @@ export async function getEmojiData(
 
   if (!localData) {
     // No local data
-    data = await fetchEmojiData(cdnUrl, locale, signal);
+    data = await fetchEmojiData(baseUrl, locale, signal);
   } else if (sessionMetadata) {
     // ETags are used to check if the data is up-to-date but only
     // once per session, so if the session metadata is already set,
@@ -344,7 +355,7 @@ export async function getEmojiData(
     // but if that fails, the possibly-stale local data is used
     try {
       const { emojisEtag, messagesEtag } = await fetchEmojibaseEtags(
-        cdnUrl,
+        baseUrl,
         locale,
         signal,
       );
@@ -354,7 +365,7 @@ export async function getEmojiData(
         !messagesEtag ||
         emojisEtag !== localData.metadata.emojisEtag ||
         messagesEtag !== localData.metadata.messagesEtag
-          ? await fetchEmojiData(cdnUrl, locale, signal)
+          ? await fetchEmojiData(baseUrl, locale, signal)
           : localData.data;
     } catch {
       data = localData.data;
