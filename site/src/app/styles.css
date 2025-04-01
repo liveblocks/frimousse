@@ -268,14 +268,17 @@
     @apply text-sm;
 
     &:not(:last-child) {
-      @apply mb-1;
+      @apply mb-2;
     }
   }
 }
 
 @utility scrollbar-thumb-* {
   --scrollbar-thumb-alpha: calc(--modifier(integer) * 1%);
-  --scrollbar-thumb: --alpha(--value(--color-\*, [color]) / var(--scrollbar-thumb-alpha, 100%));
+  --scrollbar-thumb: --alpha(
+    --value(--color-\*, [color]) /
+    var(--scrollbar-thumb-alpha, 100%)
+  );
 
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track, transparent);
 
@@ -287,7 +290,10 @@
 
 @utility scrollbar-track-* {
   --scrollbar-track-alpha: calc(--modifier(integer) * 1%);
-  --scrollbar-track: --alpha(--value(--color-\*, [color]) / var(--scrollbar-track-alpha, 100%));
+  --scrollbar-track: --alpha(
+    --value(--color-\*, [color]) /
+    var(--scrollbar-track-alpha, 100%)
+  );
 
   scrollbar-color: var(
       --scrollbar-thumb,

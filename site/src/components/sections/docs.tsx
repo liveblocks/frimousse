@@ -323,7 +323,45 @@ export function Docs({
               Emoji version
             </a>{" "}
             to use, to manually control which emojis are visible regardless of
-            the current browser's supported Emoji versions.
+            the current browser’s supported Emoji versions.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow
+          defaultValue={`"https://cdn.jsdelivr.net/npm/emojibase-data"`}
+          name="emojibaseUrl"
+          type="string"
+        >
+          <p>
+            The base URL of where the{" "}
+            <a
+              href="https://emojibase.dev/docs/datasets/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Emojibase data
+            </a>{" "}
+            should be fetched from, used as follows:{" "}
+            <code>
+              ${"{"}emojibaseUrl{"}"}/{"{"}locale{"}"}/{"{"}file{"}"}.json
+            </code>
+            . (e.g.{" "}
+            <code>
+              ${"{"}emojibaseUrl{"}"}/en/data.json
+            </code>
+            ).
+          </p>
+          <p>
+            The URL can be set to another CDN hosting the{" "}
+            <a
+              href="https://www.npmjs.com/package/emojibase-data"
+              rel="noreferrer"
+              target="_blank"
+            >
+              <code>emojibase-data</code>
+            </a>{" "}
+            package and its raw JSON files, or to a self-hosted location. When
+            self-hosting with a single locale (e.g. <code>en</code>), only that
+            locale’s directory needs to be hosted instead of the entire package.
           </p>
         </PropertiesListRow>
         <PropertiesListBasicRow>
