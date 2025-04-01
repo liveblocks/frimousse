@@ -15,17 +15,11 @@ describe("getEmojiData", () => {
 
   it("should support aborting the request", async () => {
     const controller = new AbortController();
-    const promise = getEmojiData(
-      "en",
-      Number.POSITIVE_INFINITY,
-      controller.signal,
-    );
+    const promise = getEmojiData("en", undefined, controller.signal);
 
     controller.abort();
 
-    const data = await promise;
-
-    expect(data).toBeDefined();
+    await expect(promise).rejects.toThrow(DOMException);
   });
 
   it("should support a specific emoji version", async () => {

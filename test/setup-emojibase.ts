@@ -1,128 +1,63 @@
 import { afterEach, beforeEach, vi } from "vitest";
+import createFetchMock from "vitest-fetch-mock";
 
-function mockFetch(
-  entries: Record<
-    string,
-    {
-      GET?: () => Promise<Response>;
-      HEAD?: () => Promise<Response>;
-      [method: string]: (() => Promise<Response>) | undefined;
-    }
-  >,
-) {
-  return vi
-    .spyOn(globalThis, "fetch")
-    .mockImplementation(async (url, options) => {
-      const method = options?.method?.toUpperCase() || "GET";
-      const requestUrl =
-        typeof url === "string"
-          ? url
-          : url instanceof Request
-            ? url.url
-            : url.toString();
+const CDN_URL_REGEX =
+  /^https?:\/\/cdn\.jsdelivr\.net\/npm\/emojibase-data@(?:latest|[\d\.]+)\/(\w+)\/(\w+\.json)$/;
 
-      for (const targetUrl in entries) {
-        const entry = entries[targetUrl as keyof typeof entries];
-
-        if (requestUrl === targetUrl && entry?.[method]) {
-          return entry[method]();
-        }
-      }
-
-      return Promise.reject(new Error(`Unhandled request: ${method} ${url}`));
-    });
-}
+const fetchMocker = createFetchMock(vi);
+fetchMocker.enableMocks();
 
 beforeEach(() => {
-  mockFetch({
-    "https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/data.json": {
-      GET: async () => {
+  fetchMocker.mockIf(CDN_URL_REGEX, async (req) => {
+    const [, locale, file] = req.url.match(CDN_URL_REGEX) ?? [];
+
+    const headers: HeadersInit = {
+      // TODO: generate randomly?
+      ETag: "abc123",
+    };
+
+    if (req.method === "HEAD") {
+      return {
+        status: 200,
+        headers,
+      };
+    }
+
+    if (req.method === "GET") {
+      if (locale === "en" && file === "data.json") {
         const data = (await import("emojibase-data/en/data.json")).default;
-        return Promise.resolve(
-          new Response(JSON.stringify(data), {
-            headers: {
-              ETag: "abc123",
-            },
-          }),
-        );
-      },
-      HEAD: async () => {
-        return Promise.resolve(
-          new Response(null, {
-            status: 200,
-            headers: {
-              ETag: "abc123",
-            },
-          }),
-        );
-      },
-    },
-    "https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/messages.json": {
-      GET: async () => {
+        return {
+          body: JSON.stringify(data),
+          headers,
+        };
+      }
+
+      if (locale === "en" && file === "messages.json") {
         const data = (await import("emojibase-data/en/messages.json")).default;
-        return Promise.resolve(
-          new Response(JSON.stringify(data), {
-            headers: {
-              ETag: "def456",
-            },
-          }),
-        );
-      },
-      HEAD: async () => {
-        return Promise.resolve(
-          new Response(null, {
-            status: 200,
-            headers: {
-              ETag: "def456",
-            },
-          }),
-        );
-      },
-    },
-    "https://cdn.jsdelivr.net/npm/emojibase-data@latest/fr/data.json": {
-      GET: async () => {
+        return {
+          body: JSON.stringify(data),
+          headers,
+        };
+      }
+
+      if (locale === "fr" && file === "data.json") {
         const data = (await import("emojibase-data/fr/data.json")).default;
-        return Promise.resolve(
-          new Response(JSON.stringify(data), {
-            headers: {
-              ETag: "ghi789",
-            },
-          }),
-        );
-      },
-      HEAD: async () => {
-        return Promise.resolve(
-          new Response(null, {
-            status: 200,
-            headers: {
-              ETag: "ghi789",
-            },
-          }),
-        );
-      },
-    },
-    "https://cdn.jsdelivr.net/npm/emojibase-data@latest/fr/messages.json": {
-      GET: async () => {
+        return {
+          body: JSON.stringify(data),
+          headers,
+        };
+      }
+
+      if (locale === "fr" && file === "messages.json") {
         const data = (await import("emojibase-data/fr/messages.json")).default;
-        return Promise.resolve(
-          new Response(JSON.stringify(data), {
-            headers: {
-              ETag: "jkl012",
-            },
-          }),
-        );
-      },
-      HEAD: async () => {
-        return Promise.resolve(
-          new Response(null, {
-            status: 200,
-            headers: {
-              ETag: "jkl012",
-            },
-          }),
-        );
-      },
-    },
+        return {
+          body: JSON.stringify(data),
+          headers,
+        };
+      }
+    }
+
+    throw new Error(`Unhandled URL: ${req.url}`);
   });
 });
 
