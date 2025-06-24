@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Fix return types to support TypeScript 5.1 and lower.
+
 ## [0.2.0] - 2025-04-02
 
 - When setting `emojiVersion` on `EmojiPicker.Root`, this version of Emojibase’s data will be fetched instead of `latest`.
