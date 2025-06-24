@@ -2,10 +2,10 @@ import {
   type CSSProperties,
   type ComponentProps,
   Fragment,
+  type JSX,
   type ChangeEvent as ReactChangeEvent,
   type FocusEvent as ReactFocusEvent,
   type MouseEvent as ReactMouseEvent,
-  type ReactNode,
   type SyntheticEvent as ReactSyntheticEvent,
   type UIEvent as ReactUIEvent,
   forwardRef,
@@ -1289,10 +1289,7 @@ const EmojiPickerSkinToneSelector = forwardRef<
  * </EmojiPicker.Root>
  * ```
  */
-function EmojiPickerLoading({
-  children,
-  ...props
-}: EmojiPickerLoadingProps): ReactNode {
+function EmojiPickerLoading({ children, ...props }: EmojiPickerLoadingProps) {
   const store = useEmojiPickerStore();
   const isLoading = useSelector(store, $isLoading);
 
@@ -1309,7 +1306,7 @@ function EmojiPickerLoading({
 
 function EmojiPickerEmptyWithSearch({
   children,
-}: { children: (props: { search: string }) => ReactNode }) {
+}: { children: (props: { search: string }) => JSX.Element }) {
   const store = useEmojiPickerStore();
   const search = useSelector(store, $search);
 
@@ -1341,10 +1338,7 @@ function EmojiPickerEmptyWithSearch({
  * </EmojiPicker.Empty>
  * ```
  */
-function EmojiPickerEmpty({
-  children,
-  ...props
-}: EmojiPickerEmptyProps): ReactNode {
+function EmojiPickerEmpty({ children, ...props }: EmojiPickerEmptyProps) {
   const store = useEmojiPickerStore();
   const isEmpty = useSelector(store, $isEmpty);
 
@@ -1395,9 +1389,7 @@ function EmojiPickerEmpty({
  * If you prefer to use a hook rather than a component,
  * {@link useActiveEmoji} is also available.
  */
-function EmojiPickerActiveEmoji({
-  children,
-}: EmojiPickerActiveEmojiProps): ReactNode {
+function EmojiPickerActiveEmoji({ children }: EmojiPickerActiveEmojiProps) {
   const activeEmoji = useActiveEmoji();
 
   return children({ emoji: activeEmoji });
@@ -1447,10 +1439,7 @@ function EmojiPickerActiveEmoji({
  * An already-built skin tone selector is also available,
  * {@link EmojiPicker.SkinToneSelector|`<EmojiPicker.SkinToneSelector />`}.
  */
-function EmojiPickerSkinTone({
-  children,
-  emoji,
-}: EmojiPickerSkinToneProps): ReactNode {
+function EmojiPickerSkinTone({ children, emoji }: EmojiPickerSkinToneProps) {
   const [skinTone, setSkinTone, skinToneVariations] = useSkinTone(emoji);
 
   return children({ skinTone, setSkinTone, skinToneVariations });

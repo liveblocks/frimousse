@@ -4,7 +4,7 @@ import type {
   Locale as EmojibaseLocale,
   SkinToneKey as EmojibaseSkinToneKey,
 } from "emojibase/lib/types";
-import type { ComponentProps, ComponentType, ReactNode } from "react";
+import type { ComponentProps, ComponentType, JSX, ReactNode } from "react";
 
 type Resolve<T> = T extends (...args: unknown[]) => unknown
   ? T
@@ -226,7 +226,7 @@ export interface EmojiPickerEmptyProps
    * The content to render when no emoji is found for the current search, or
    * a render callback which receives the current search value.
    */
-  children?: ReactNode | ((props: EmojiPickerEmptyRenderProps) => ReactNode);
+  children?: ReactNode | ((props: EmojiPickerEmptyRenderProps) => JSX.Element);
 }
 
 export type EmojiPickerActiveEmojiRenderProps = {
@@ -242,7 +242,7 @@ export type EmojiPickerActiveEmojiProps = {
    * A render callback which receives the currently active emoji (either hovered or selected
    * via keyboard navigation).
    */
-  children: (props: EmojiPickerActiveEmojiRenderProps) => ReactNode;
+  children: (props: EmojiPickerActiveEmojiRenderProps) => JSX.Element;
 };
 
 export type EmojiPickerSkinToneRenderProps = {
@@ -274,5 +274,5 @@ export type EmojiPickerSkinToneProps = {
    * A render callback which receives the current skin tone and a function
    * to change it, as well as the skin tone variations of the specified emoji.
    */
-  children: (props: EmojiPickerSkinToneRenderProps) => ReactNode;
+  children: (props: EmojiPickerSkinToneRenderProps) => JSX.Element;
 };

@@ -90,5 +90,5 @@ export function useSkinTone(
     store.set({ skinTone });
   }, []);
 
-  return [skinTone, setSkinTone, skinToneVariations] as const;
+  return [skinTone, setSkinTone, skinToneVariations];
 }
