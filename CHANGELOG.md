@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-- Fix return types to support TypeScript 5.1 and lower.
+- Fix return types to support TypeScript versions lower than 5.1.
 
 ## [0.2.0] - 2025-04-02
 
