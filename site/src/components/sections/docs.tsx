@@ -309,6 +309,13 @@ export function Docs({
           <p>The number of columns in the list.</p>
         </PropertiesListRow>
         <PropertiesListRow
+          defaultValue="true"
+          name="isSticky"
+          type="boolean"
+        >
+          <p>Whether to enable the sticky position of the category headers.</p>
+        </PropertiesListRow>
+        <PropertiesListRow
           defaultValue="the most recent version supported by the current browser"
           name="emojiVersion"
           type="number"
