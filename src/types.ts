@@ -124,6 +124,11 @@ export interface EmojiPickerListCategoryHeaderProps
    * The category for this sticky header.
    */
   category: Category;
+
+  /**
+   * Whether to enable the sticky position of the category header.
+   */
+  isSticky?: boolean;
 }
 
 export interface EmojiPickerListEmojiProps
@@ -195,6 +200,13 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
    * @default "https://cdn.jsdelivr.net/npm/emojibase-data"
    */
   emojibaseUrl?: string;
+
+  /**
+   * Whether to enable the sticky position of the category headers.
+   *
+   * @default true
+   */
+  isSticky?: boolean;
 }
 
 export type EmojiPickerViewportProps = ComponentProps<"div">;
