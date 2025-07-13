@@ -27,6 +27,7 @@ function DefaultPage({
   searchOnChange,
   rootChildren,
   emptyChildren = <div data-testid="empty">No emojis found</div>,
+  sticky = true,
 }: {
   children?: ReactNode;
   locale?: EmojiPickerRootProps["locale"];
@@ -40,6 +41,7 @@ function DefaultPage({
   searchValue?: EmojiPickerSearchProps["value"];
   rootChildren?: EmojiPickerRootProps["children"];
   emptyChildren?: EmojiPickerEmptyProps["children"];
+  sticky?: EmojiPickerRootProps["sticky"];
 }) {
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null);
 
@@ -57,6 +59,7 @@ function DefaultPage({
           locale={locale}
           onEmojiSelect={setSelectedEmoji}
           skinTone={skinTone}
+          sticky={sticky}
         >
           <EmojiPicker.Search
             data-testid="search"
@@ -430,6 +433,28 @@ describe("EmojiPicker.Root", () => {
     await expect
       .element(page.getByRole("gridcell").nth(7))
       .toHaveAttribute("aria-colindex", "7");
+  });
+
+  it("should support disabling sticky category headers", async () => {
+    page.render(
+      <DefaultPage
+        sticky={false}
+        listComponents={{
+          CategoryHeader: ({ category, ...props }) => (
+            <div
+              data-testid="category-header"
+              {...props}
+            >
+              {category.label}
+            </div>
+          ),
+        }}
+      />,
+    );
+
+    await expect.element(page.getByTestId("category-header").nth(1)).not.toHaveStyle({
+      position: "sticky",
+    });
   });
 });
 
