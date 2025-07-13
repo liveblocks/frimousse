@@ -149,7 +149,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
       onBlurCapture,
       children,
       style,
-      isSticky = true,
+      sticky = true,
       ...props
     },
     forwardedRef,
@@ -160,7 +160,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
         stableOnEmojiSelect,
         validateLocale(locale),
         columns,
-        isSticky,
+        sticky,
         validateSkinTone(skinTone),
       ),
     );
@@ -182,8 +182,8 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
     }, [columns]);
 
     useLayoutEffect(() => {
-      store.set({ isSticky });
-    }, [isSticky]);
+      store.set({ sticky });
+    }, [sticky]);
 
     useLayoutEffect(() => {
       store.set({ skinTone: validateSkinTone(skinTone) });
@@ -775,7 +775,7 @@ function listCategoryProps(
 function listCategoryHeaderProps(
   category: EmojiPickerCategory,
   sizer = false,
-  isSticky = true,
+  sticky = true,
 ): WithAttributes<EmojiPickerListCategoryHeaderProps> {
   return {
     category,
@@ -784,7 +784,7 @@ function listCategoryHeaderProps(
       contain: !sizer ? "layout paint" : undefined,
       height: !sizer ? "var(--frimousse-category-header-height)" : undefined,
       pointerEvents: "auto",
-      position: isSticky ? "sticky" : undefined,
+      position: sticky ? "sticky" : undefined,
       top: 0,
     },
   };
@@ -920,7 +920,7 @@ const EmojiPickerListCategory = memo(
       (state) => state.data?.categories[categoryIndex],
       shallow,
     );
-    const isSticky = useSelectorKey(store, "isSticky");
+    const sticky = useSelectorKey(store, "sticky");
 
     /* v8 ignore next 3 */
     if (!category) {
@@ -933,7 +933,7 @@ const EmojiPickerListCategory = memo(
           {...listCategoryHeaderProps(
             { label: category.label },
             false,
-            isSticky,
+            sticky,
           )}
         />
       </div>

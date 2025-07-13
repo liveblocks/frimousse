@@ -310,7 +310,7 @@ export function Docs({
         </PropertiesListRow>
         <PropertiesListRow
           defaultValue="true"
-          name="isSticky"
+          name="sticky"
           type="boolean"
         >
           <p>Whether to enable the sticky position of the category headers.</p>
