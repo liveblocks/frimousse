@@ -200,6 +200,7 @@ export function createEmojiPickerStore(
       const {
         listRef,
         viewportRef,
+        sticky,
         rowHeight,
         viewportHeight,
         categoryHeaderHeight,
@@ -244,8 +245,8 @@ export function createEmojiPickerStore(
 
       let viewportStartY = viewportScrollY + rowScrollMarginTop;
 
-      // Account for sticky headers if the row is in the upper half of the viewport
-      if (rowY < viewportScrollY + viewportHeight / 2) {
+      // Account for headers if they are sticky and if the row is in the upper half of the viewport
+      if (sticky && rowY < viewportScrollY + viewportHeight / 2) {
         viewportStartY += categoryHeaderHeight;
       }
 
@@ -257,7 +258,11 @@ export function createEmojiPickerStore(
           // Align to the viewport's top or bottom based on the row's position
           top: Math.max(
             rowY < viewportStartY + categoryHeaderHeight
-              ? rowY - Math.max(categoryHeaderHeight, rowScrollMarginTop)
+              ? rowY -
+                  Math.max(
+                    sticky ? categoryHeaderHeight : 0,
+                    rowScrollMarginTop,
+                  )
               : rowY - viewportHeight + rowHeight + rowScrollMarginBottom,
             0,
           ),
