@@ -308,6 +308,9 @@ export function Docs({
         <PropertiesListRow defaultValue="10" name="columns" type="number">
           <p>The number of columns in the list.</p>
         </PropertiesListRow>
+        <PropertiesListRow defaultValue="true" name="sticky" type="boolean">
+          <p>Whether the category headers should be sticky.</p>
+        </PropertiesListRow>
         <PropertiesListRow
           defaultValue="the most recent version supported by the current browser"
           name="emojiVersion"

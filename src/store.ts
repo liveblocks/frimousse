@@ -16,6 +16,7 @@ type Interaction = "keyboard" | "pointer" | "none";
 export type EmojiPickerStore = {
   locale: Locale;
   columns: number;
+  sticky: boolean;
   skinTone: SkinTone;
   onEmojiSelect: NonNullable<EmojiPickerRootProps["onEmojiSelect"]>;
 
@@ -59,6 +60,7 @@ export function createEmojiPickerStore(
   onEmojiSelect: NonNullable<EmojiPickerRootProps["onEmojiSelect"]>,
   initialLocale: Locale,
   initialColumns: number,
+  initialSticky: boolean,
   initialSkinTone: SkinTone,
 ) {
   let viewportScrollY = 0;
@@ -66,6 +68,7 @@ export function createEmojiPickerStore(
   return createStore<EmojiPickerStore>((set, get) => ({
     locale: initialLocale,
     columns: initialColumns,
+    sticky: initialSticky,
     skinTone: initialSkinTone,
     onEmojiSelect,
 
@@ -197,6 +200,7 @@ export function createEmojiPickerStore(
       const {
         listRef,
         viewportRef,
+        sticky,
         rowHeight,
         viewportHeight,
         categoryHeaderHeight,
@@ -241,8 +245,8 @@ export function createEmojiPickerStore(
 
       let viewportStartY = viewportScrollY + rowScrollMarginTop;
 
-      // Account for sticky headers if the row is in the upper half of the viewport
-      if (rowY < viewportScrollY + viewportHeight / 2) {
+      // Account for headers if they are sticky and if the row is in the upper half of the viewport
+      if (sticky && rowY < viewportScrollY + viewportHeight / 2) {
         viewportStartY += categoryHeaderHeight;
       }
 
@@ -254,7 +258,11 @@ export function createEmojiPickerStore(
           // Align to the viewport's top or bottom based on the row's position
           top: Math.max(
             rowY < viewportStartY + categoryHeaderHeight
-              ? rowY - Math.max(categoryHeaderHeight, rowScrollMarginTop)
+              ? rowY -
+                  Math.max(
+                    sticky ? categoryHeaderHeight : 0,
+                    rowScrollMarginTop,
+                  )
               : rowY - viewportHeight + rowHeight + rowScrollMarginBottom,
             0,
           ),
