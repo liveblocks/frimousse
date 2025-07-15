@@ -2,10 +2,10 @@ import {
   type CSSProperties,
   type ComponentProps,
   Fragment,
-  type JSX,
   type ChangeEvent as ReactChangeEvent,
   type FocusEvent as ReactFocusEvent,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
   type SyntheticEvent as ReactSyntheticEvent,
   type UIEvent as ReactUIEvent,
   forwardRef,
@@ -930,11 +930,7 @@ const EmojiPickerListCategory = memo(
     return (
       <div {...listCategoryProps(categoryIndex, category)}>
         <CategoryHeader
-          {...listCategoryHeaderProps(
-            { label: category.label },
-            false,
-            sticky,
-          )}
+          {...listCategoryHeaderProps({ label: category.label }, false, sticky)}
         />
       </div>
     );
@@ -1318,7 +1314,7 @@ function EmojiPickerLoading({ children, ...props }: EmojiPickerLoadingProps) {
 
 function EmojiPickerEmptyWithSearch({
   children,
-}: { children: (props: { search: string }) => JSX.Element }) {
+}: { children: (props: { search: string }) => ReactNode }) {
   const store = useEmojiPickerStore();
   const search = useSelector(store, $search);
 

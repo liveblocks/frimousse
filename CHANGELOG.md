@@ -1,7 +1,7 @@
 ## [Unreleased]
 
 - Add `sticky` prop on `EmojiPicker.Root` to allow disabling sticky category headers, thanks @Earthsplit!
-- Fix return types to support TypeScript versions lower than 5.1.
+- Add TypeScript as an optional peer dependency to prevent using TypeScript versions lower than 5.1.
 
 ## [0.2.0] - 2025-04-02
 
