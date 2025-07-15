@@ -81,7 +81,6 @@ Find the full documentation and examples on [frimousse.liveblocks.io](https://fr
 - React 18 and 19
 - TypeScript 5.1 and above
 
-
 ## Miscellaneous
 
 The name [“frimousse”](https://en.wiktionary.org/wiki/frimousse) means “little face” in French, and it can also refer to smileys and emoticons.
