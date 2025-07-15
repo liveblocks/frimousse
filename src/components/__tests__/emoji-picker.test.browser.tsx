@@ -438,23 +438,22 @@ describe("EmojiPicker.Root", () => {
   it("should support disabling sticky category headers", async () => {
     page.render(
       <DefaultPage
-        sticky={false}
         listComponents={{
           CategoryHeader: ({ category, ...props }) => (
-            <div
-              data-testid="category-header"
-              {...props}
-            >
+            <div data-testid="category-header" {...props}>
               {category.label}
             </div>
           ),
         }}
+        sticky={false}
       />,
     );
 
-    await expect.element(page.getByTestId("category-header").nth(1)).not.toHaveStyle({
-      position: "sticky",
-    });
+    await expect
+      .element(page.getByTestId("category-header").nth(1))
+      .not.toHaveStyle({
+        position: "sticky",
+      });
   });
 });
 
@@ -531,82 +530,100 @@ describe("EmojiPicker.Search", () => {
 });
 
 describe("EmojiPicker.Viewport", () => {
-  it("should virtualize rows based on the viewport height", async () => {
-    function Page() {
-      const [viewportHeight, setViewportHeight] = useState(400);
-      const [rowHeight, setRowHeight] = useState(30);
-      const [categoryHeaderHeight, setCategoryHeaderHeight] = useState(30);
+  it.each([
+    ["with sticky headers", true],
+    ["without sticky headers", false],
+  ])(
+    "should virtualize rows based on the viewport height %s",
+    async (_, sticky) => {
+      function Page() {
+        const [viewportHeight, setViewportHeight] = useState(400);
+        const [rowHeight, setRowHeight] = useState(30);
+        const [categoryHeaderHeight, setCategoryHeaderHeight] = useState(30);
 
-      return (
-        <DefaultPage
-          listComponents={{
-            Row: ({ children, style, ...props }) => (
-              <div
-                data-testid="custom-row"
-                {...props}
-                style={{ ...style, height: rowHeight }}
-              >
-                {children}
-              </div>
-            ),
-            CategoryHeader: ({ category, style, ...props }) => (
-              <div
-                data-testid="custom-category-header"
-                {...props}
-                style={{ ...style, height: categoryHeaderHeight }}
-              >
-                {category.label}
-              </div>
-            ),
-          }}
-        >
-          <input
-            data-testid="viewport-height"
-            onChange={(event) => setViewportHeight(Number(event.target.value))}
-            type="number"
-            value={viewportHeight}
-          />
-          <input
-            data-testid="row-height"
-            onChange={(event) => setRowHeight(Number(event.target.value))}
-            type="number"
-            value={rowHeight}
-          />
-          <input
-            data-testid="category-header-height"
-            onChange={(event) =>
-              setCategoryHeaderHeight(Number(event.target.value))
-            }
-            type="number"
-            value={categoryHeaderHeight}
-          />
-        </DefaultPage>
-      );
-    }
+        return (
+          <DefaultPage
+            listComponents={{
+              Row: ({ children, style, ...props }) => (
+                <div
+                  data-testid="custom-row"
+                  {...props}
+                  style={{ ...style, height: rowHeight }}
+                >
+                  {children}
+                </div>
+              ),
+              CategoryHeader: ({ category, style, ...props }) => (
+                <div
+                  data-testid="custom-category-header"
+                  {...props}
+                  style={{ ...style, height: categoryHeaderHeight }}
+                >
+                  {category.label}
+                </div>
+              ),
+            }}
+            sticky={sticky}
+          >
+            <input
+              data-testid="viewport-height"
+              onChange={(event) =>
+                setViewportHeight(Number(event.target.value))
+              }
+              type="number"
+              value={viewportHeight}
+            />
+            <input
+              data-testid="row-height"
+              onChange={(event) => setRowHeight(Number(event.target.value))}
+              type="number"
+              value={rowHeight}
+            />
+            <input
+              data-testid="category-header-height"
+              onChange={(event) =>
+                setCategoryHeaderHeight(Number(event.target.value))
+              }
+              type="number"
+              value={categoryHeaderHeight}
+            />
+          </DefaultPage>
+        );
+      }
 
-    page.render(<Page />);
+      page.render(<Page />);
 
-    await expect.element(page.getByText("😀")).toBeInTheDocument();
+      await expect.element(page.getByText("😀")).toBeInTheDocument();
 
-    await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
-    await expect.element(page.getByRole("row").nth(20)).not.toBeInTheDocument();
+      await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
+      await expect
+        .element(page.getByRole("row").nth(20))
+        .not.toBeInTheDocument();
 
-    await page.getByTestId("viewport-height").fill("500");
-    await page.getByTestId("row-height").fill("20");
-    await page.getByTestId("category-header-height").fill("20");
+      await page.getByTestId("viewport-height").fill("500");
+      await page.getByTestId("row-height").fill("20");
+      await page.getByTestId("category-header-height").fill("20");
 
-    await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
-    await expect.element(page.getByRole("row").nth(20)).toBeInTheDocument();
+      await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
+      await expect.element(page.getByRole("row").nth(20)).toBeInTheDocument();
 
-    await page.getByTestId("viewport-height").fill("200");
-    await page.getByTestId("row-height").fill("100");
-    await page.getByTestId("category-header-height").fill("400");
+      await page.getByTestId("viewport-height").fill("200");
+      await page.getByTestId("row-height").fill("100");
+      await page.getByTestId("category-header-height").fill("400");
 
-    await expect.element(page.getByRole("row").nth(10)).not.toBeInTheDocument();
-    await expect.element(page.getByRole("row").nth(20)).not.toBeInTheDocument();
-  });
+      await expect
+        .element(page.getByRole("row").nth(10))
+        .not.toBeInTheDocument();
+      await expect
+        .element(page.getByRole("row").nth(20))
+        .not.toBeInTheDocument();
+    },
+  );
 
-  it("should virtualize rows based on scroll", async () => {
+  it.each([
+    ["with sticky headers", true],
+    ["without sticky headers", false],
+  ])("should virtualize rows based on scroll %s", async (_, sticky) => {
     function Page() {
       const scrollViewport = () => {
         const viewport = document.querySelector("[data-testid='viewport']");
@@ -618,7 +635,7 @@ describe("EmojiPicker.Viewport", () => {
       };
 
       return (
-        <DefaultPage viewportHeight={200}>
+        <DefaultPage sticky={sticky} viewportHeight={200}>
           <button
             data-testid="scroll-viewport"
             onClick={scrollViewport}
