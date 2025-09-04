@@ -68,7 +68,15 @@ function EmojiPickerEmoji({
       )}
       data-slot="emoji-picker-emoji"
     >
-      {emoji.emoji}
+      {emoji.isCustom ? (
+        <img
+          alt={emoji.label}
+          className="size-4 object-contain"
+          src={emoji.emoji}
+        />
+      ) : (
+        emoji.emoji
+      )}
     </button>
   );
 }
@@ -77,12 +85,26 @@ function EmojiPickerCategoryHeader({
   category,
   ...props
 }: EmojiPickerListCategoryHeaderProps) {
+  const cat = category as any;
   return (
     <div
       {...props}
       className="bg-popover px-3 pt-3.5 pb-2 text-muted-foreground text-xs leading-none"
       data-slot="emoji-picker-category-header"
     >
+      {cat.icon && (
+        <span style={{ marginRight: "0.5em" }}>
+          {cat.isCustomIcon ? (
+            <img
+              alt=""
+              className="inline size-4 object-contain"
+              src={cat.icon}
+            />
+          ) : (
+            cat.icon
+          )}
+        </span>
+      )}
       {category.label}
     </div>
   );
@@ -141,7 +163,15 @@ function EmojiPickerFooter({
           emoji ? (
             <>
               <div className="flex size-7 flex-none items-center justify-center text-lg">
-                {emoji.emoji}
+                {emoji.isCustom ? (
+                  <img
+                    alt={emoji.label}
+                    className="size-4 object-contain"
+                    src={emoji.emoji}
+                  />
+                ) : (
+                  emoji.emoji
+                )}
               </div>
               <span className="truncate text-secondary-foreground text-xs">
                 {emoji.label}
