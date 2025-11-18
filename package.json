@@ -3,7 +3,7 @@
   "description": "A lightweight, unstyled, and composable emoji picker for React.",
   "version": "0.3.0",
   "license": "MIT",
-  "packageManager": "npm@11.1.0",
+  "packageManager": "npm@11.6.0",
   "type": "module",
   "workspaces": [
     ".",

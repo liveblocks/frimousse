@@ -36,6 +36,7 @@ jobs:
         with:
           node-version: 23
           cache: npm
+      - run: npm install -g npm@11.6.0
       - name: Setup git config
         run: |
           git config user.name "github-actions[bot]"
