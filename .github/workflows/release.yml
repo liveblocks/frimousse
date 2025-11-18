@@ -34,9 +34,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 23
+          node-version: "22.21.0"
           cache: npm
-      - run: npm install -g npm@11.6.0
       - name: Setup git config
         run: |
           git config user.name "github-actions[bot]"
