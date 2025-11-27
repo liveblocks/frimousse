@@ -22,6 +22,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}
 run-name: "Release (increment: ${{ github.event.inputs.increment }}, prerelease: ${{ github.event.inputs.prerelease || 'none' }}${{ github.event.inputs.dry-run == 'true' && ', dry run' || '' }})"
+permissions:
+  id-token: write
+  contents: read
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -31,17 +34,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 23
+          node-version: "22.21.0"
           cache: npm
       - name: Setup git config
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Setup npm config
-        run: |
-          npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Install dependencies
         run: npm ci  
       - name: Release package
@@ -58,5 +56,4 @@ jobs:
           fi
           npm run release -- $ARGS --ci
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
