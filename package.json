@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
-    "@biomejs/biome": "^2.2.0",
+    "@biomejs/biome": "^2.3.8",
     "@release-it/keep-a-changelog": "^7.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",

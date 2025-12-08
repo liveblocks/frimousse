@@ -4,7 +4,7 @@ import {
   type ReactionsJson,
   ROOM_ID,
 } from "liveblocks.config";
-import { unstable_cacheLife as cachelife } from "next/cache";
+import { cacheLife } from "next/cache";
 import { type ComponentProps, Suspense } from "react";
 import {
   Reactions as ClientReactions,
@@ -19,7 +19,7 @@ const liveblocks = new LiveblocksClient({
 async function ServerReactions() {
   "use cache";
 
-  cachelife("seconds");
+  cacheLife("seconds");
 
   let reactions: ReactionsJson;
 
