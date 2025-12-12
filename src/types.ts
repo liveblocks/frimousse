@@ -48,11 +48,41 @@ export type EmojiDataEmoji = {
   tags: string[];
   countryFlag: true | undefined;
   skins: Record<Exclude<SkinTone, "none">, string> | undefined;
+  isCustom?: boolean;
+};
+
+export type CustomCategory = {
+  /**
+   * The unique identifier of the category (used to associate emojis with categories).
+   */
+  id?: number;
+
+  /**
+   * The index of the category (determines display order).
+   */
+  index: number;
+
+  /**
+   * The name/label of the category.
+   */
+  label: string;
+
+  /**
+   * The icon for the category (emoji character or URL).
+   */
+  icon: string;
+
+  /**
+   * Whether the icon is a custom image (URL) rather than an emoji character.
+   */
+  isCustomIcon?: boolean;
 };
 
 export type EmojiDataCategory = {
   index: number;
   label: string;
+  icon?: string;
+  isCustomIcon?: boolean;
 };
 
 export type EmojiData = {
@@ -65,10 +95,15 @@ export type EmojiData = {
 export type EmojiPickerEmoji = {
   emoji: string;
   label: string;
+  isCustom?: boolean;
+  tags?: string[];
+  category?: number;
 };
 
 export type EmojiPickerCategory = {
   label: string;
+  icon?: string;
+  isCustomIcon?: boolean;
 };
 
 export type EmojiPickerDataRow = {
@@ -80,6 +115,8 @@ export type EmojiPickerDataCategory = {
   label: string;
   rowsCount: number;
   startRowIndex: number;
+  icon?: string;
+  isCustomIcon?: boolean;
 };
 
 export type EmojiPickerData = {
@@ -195,6 +232,16 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
    * @default "https://cdn.jsdelivr.net/npm/emojibase-data"
    */
   emojibaseUrl?: string;
+
+  /**
+   * Custom emojis to include in the picker.
+   */
+  customEmojis?: Emoji[];
+
+  /**
+   * Custom categories to include in the picker.
+   */
+  customCategories?: CustomCategory[];
 
   /**
    * Whether the category headers should be sticky.
