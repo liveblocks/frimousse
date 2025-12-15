@@ -19,6 +19,17 @@ function EmojiPicker({ className, columns, ...props }: EmojiPickerRootProps) {
       {...props}
     >
       <EmojiPickerPrimitive.Search className="focusable z-10 mx-2 mt-2 appearance-none rounded-md bg-neutral-100 px-2.5 py-2 text-sm dark:bg-neutral-800" />
+      <EmojiPickerPrimitive.CategoryNav>
+        {({ categories }) => (
+          <div className="mx-2 mt-2 px-1 flex gap-2 overflow-x-auto max-w-[38ch] text-xs">
+            {categories.map(({ category, scrollTo }) => (
+              <button key={category.label} type="button" onClick={scrollTo} className="bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 hover:dark:bg-neutral-700 px-2 rounded-sm flex items-center leading-6 text-nowrap">
+                {category.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </EmojiPickerPrimitive.CategoryNav>
       <EmojiPickerPrimitive.Viewport className="scrollbar-track-[transparent] scrollbar-thumb-neutral-500/30 dark:scrollbar-thumb-neutral-400/30 relative flex-1 outline-hidden">
         <EmojiPickerPrimitive.Loading className="absolute inset-0 flex items-center justify-center text-neutral-400 text-sm dark:text-neutral-500">
           Loading…

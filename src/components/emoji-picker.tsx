@@ -40,6 +40,7 @@ import type {
   EmojiData,
   EmojiPickerActiveEmojiProps,
   EmojiPickerCategory,
+  EmojiPickerCategoryNavProps,
   EmojiPickerDataCategory,
   EmojiPickerEmoji,
   EmojiPickerEmptyProps,
@@ -1452,6 +1453,64 @@ function EmojiPickerSkinTone({ children, emoji }: EmojiPickerSkinToneProps) {
   return children({ skinTone, setSkinTone, skinToneVariations });
 }
 
+/**
+ * Exposes the emoji categories and provides scroll handlers to navigate
+ * to each category via a render callback.
+ *
+ * @example
+ * ```tsx
+ * <EmojiPicker.CategoryNav>
+ *   {({ categories }) => (
+ *     <div>
+ *       {categories.map(({ category, scrollTo }) => (
+ *         <button key={category.label} onClick={scrollTo}>
+ *           {category.label}
+ *         </button>
+ *       ))}
+ *     </div>
+ *   )}
+ * </EmojiPicker.CategoryNav>
+ * ```
+ *
+ * This component allows building custom category navigation that can scroll
+ * to the corresponding section in the emoji list.
+ */
+function EmojiPickerCategoryNav({
+  children,
+}: EmojiPickerCategoryNavProps) {
+  const store = useEmojiPickerStore();
+  const data = useSelectorKey(store, "data");
+  const viewportRef = useSelectorKey(store, "viewportRef");
+  const rowHeight = useSelectorKey(store, "rowHeight");
+  const categoryHeaderHeight = useSelectorKey(store, "categoryHeaderHeight");
+
+  const categories = useMemo(() => {
+    if (!data?.categories || !viewportRef || !rowHeight || !categoryHeaderHeight) {
+      return [];
+    }
+
+    return data.categories.map((category, index) => ({
+      category: { label: category.label },
+      scrollTo: () => {
+        const viewport = viewportRef.current;
+
+        if (!viewport) {
+          return;
+        }
+
+        const scrollTop =
+          index * categoryHeaderHeight + category.startRowIndex * rowHeight;
+
+        viewport.scrollTo({
+          top: scrollTop,
+        });
+      },
+    }));
+  }, [data?.categories, viewportRef, rowHeight, categoryHeaderHeight]);
+
+  return children({ categories });
+}
+
 EmojiPickerRoot.displayName = "EmojiPicker.Root";
 EmojiPickerSearch.displayName = "EmojiPicker.Search";
 EmojiPickerViewport.displayName = "EmojiPicker.Viewport";
@@ -1461,10 +1520,12 @@ EmojiPickerEmpty.displayName = "EmojiPicker.Empty";
 EmojiPickerSkinToneSelector.displayName = "EmojiPicker.SkinToneSelector";
 EmojiPickerActiveEmoji.displayName = "EmojiPicker.ActiveEmoji";
 EmojiPickerSkinTone.displayName = "EmojiPicker.SkinTone";
+EmojiPickerCategoryNav.displayName = "EmojiPicker.CategoryNav";
 
 export {
   EmojiPickerRoot as Root, //                         <EmojiPicker.Root />
   EmojiPickerSearch as Search, //                     <EmojiPicker.Search />
+  EmojiPickerCategoryNav as CategoryNav, //           <EmojiPicker.CategoryNav />
   EmojiPickerViewport as Viewport, //                 <EmojiPicker.Viewport />
   EmojiPickerList as List, //                         <EmojiPicker.List />
   EmojiPickerLoading as Loading, //                   <EmojiPicker.Loading />
