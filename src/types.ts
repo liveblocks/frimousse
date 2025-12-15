@@ -283,3 +283,28 @@ export type EmojiPickerSkinToneProps = {
    */
   children: (props: EmojiPickerSkinToneRenderProps) => ReactNode;
 };
+
+export type EmojiPickerCategoryNavRenderProps = {
+  /**
+   * An array of categories with their labels and scroll handlers.
+   */
+  categories: {
+    /**
+     * The category information.
+     */
+    category: Category;
+
+    /**
+     * A function to scroll the viewport to this category.
+     */
+    scrollTo: () => void;
+  }[];
+};
+
+export type EmojiPickerCategoryNavProps = {
+  /**
+   * A render callback which receives an array of categories with their
+   * labels and scroll handlers.
+   */
+  children: (props: EmojiPickerCategoryNavRenderProps) => ReactNode;
+};

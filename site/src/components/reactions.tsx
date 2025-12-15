@@ -12,36 +12,36 @@ import {
   ReactionsList,
 } from "./reactions.client";
 
-const liveblocks = new LiveblocksClient({
-  secret: process.env.LIVEBLOCKS_SECRET_KEY!,
-});
+// const liveblocks = new LiveblocksClient({
+//   secret: process.env.LIVEBLOCKS_SECRET_KEY!,
+// });
 
-async function ServerReactions() {
-  "use cache";
+// async function ServerReactions() {
+//   "use cache";
 
-  cacheLife("seconds");
+//   cacheLife("seconds");
 
-  let reactions: ReactionsJson;
+//   let reactions: ReactionsJson;
 
-  try {
-    reactions = (await liveblocks.getStorageDocument(ROOM_ID, "json"))
-      .reactions;
-  } catch {
-    reactions = DEFAULT_REACTIONS;
-  }
+//   try {
+//     reactions = (await liveblocks.getStorageDocument(ROOM_ID, "json"))
+//       .reactions;
+//   } catch {
+//     reactions = DEFAULT_REACTIONS;
+//   }
 
-  if (!reactions || Object.keys(reactions).length === 0) {
-    reactions = DEFAULT_REACTIONS;
-  }
+//   if (!reactions || Object.keys(reactions).length === 0) {
+//     reactions = DEFAULT_REACTIONS;
+//   }
 
-  return <ClientReactions roomId={ROOM_ID} serverReactions={reactions} />;
-}
+//   return <ClientReactions roomId={ROOM_ID} serverReactions={reactions} />;
+// }
 
 export function Reactions(props: Omit<ComponentProps<"div">, "children">) {
   return (
     <ReactionsList {...props}>
       <Suspense fallback={<FallbackReactions />}>
-        <ServerReactions />
+        {/* <ServerReactions /> */}
       </Suspense>
     </ReactionsList>
   );

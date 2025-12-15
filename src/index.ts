@@ -4,6 +4,7 @@ export type {
   Category,
   Emoji,
   EmojiPickerActiveEmojiProps,
+  EmojiPickerCategoryNavProps,
   EmojiPickerEmptyProps,
   EmojiPickerListCategoryHeaderProps,
   EmojiPickerListComponents,
