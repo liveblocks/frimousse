@@ -12,9 +12,14 @@ import {
   ReactionsList,
 } from "./reactions.client";
 
-const liveblocks = new LiveblocksClient({
-  secret: process.env.LIVEBLOCKS_SECRET_KEY!,
-});
+function getLiveblocksClient() {
+  const secret = process.env.LIVEBLOCKS_SECRET_KEY;
+  if (!secret?.startsWith("sk_")) {
+    return null;
+  }
+
+  return new LiveblocksClient({ secret });
+}
 
 async function ServerReactions() {
   "use cache";
@@ -23,9 +28,12 @@ async function ServerReactions() {
 
   let reactions: ReactionsJson;
 
+  const liveblocks = getLiveblocksClient();
+
   try {
-    reactions = (await liveblocks.getStorageDocument(ROOM_ID, "json"))
-      .reactions;
+    reactions = liveblocks
+      ? (await liveblocks.getStorageDocument(ROOM_ID, "json")).reactions
+      : DEFAULT_REACTIONS;
   } catch {
     reactions = DEFAULT_REACTIONS;
   }

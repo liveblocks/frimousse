@@ -113,4 +113,5 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  fetchMocker.enableMocks();
 });

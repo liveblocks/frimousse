@@ -1,16 +1,27 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "extends": ["//"],
   "tasks": {
     "dev": {
+      "cache": false
+    },
+    "site#dev": {
+      "dependsOn": ["^build"],
       "cache": false
     },
     "build": {
       "outputs": ["dist/**"]
     },
+    "site#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "out/**", "!.next/cache/**"],
+      "env": ["LIVEBLOCKS_SECRET_KEY", "LIVEBLOCKS_USER_ID_SALT"]
+    },
     "test": {
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts"],
       "outputs": ["coverage/**"]
+    },
+    "site#test": {
+      "outputs": []
     },
     "lint:tsc": {
       "outputs": []
@@ -20,6 +31,10 @@
     },
     "lint:package": {
       "dependsOn": ["build"],
+      "outputs": []
+    },
+    "site#lint:package": {
+      "dependsOn": [],
       "outputs": []
     },
     "format": {
