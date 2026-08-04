@@ -72,6 +72,64 @@ npx shadcn@latest add https://frimousse.liveblocks.io/r/emoji-picker
 
 It can be composed and combined with other shadcn/ui components like [Popover](https://ui.shadcn.com/docs/components/popover).
 
+### Custom emoji data & locales
+
+Emoji data is resolved by a function, and the `resolveEmojiData` prop on `EmojiPicker.Root` lets you replace it. Its default, `defaultEmojiDataResolver`, fetches [Emojibase](https://emojibase.dev/) data from a CDN (cached in `localStorage`/`sessionStorage`) for the [locales it supports](https://emojibase.dev/docs/datasets/#localization).
+
+If you already have emoji data in memory, or need a locale Emojibase doesn’t provide, return it from your own resolver and delegate everything else to the default one.
+
+```tsx
+import { EmojiPicker, defaultEmojiDataResolver, type EmojiData } from "frimousse";
+
+const myEmojiData: Record<string, EmojiData> = {
+  tr: {
+    locale: "tr",
+    emojis: [
+      /* … */
+    ],
+    categories: [
+      /* … */
+    ],
+    skinTones: {
+      /* … */
+    },
+  },
+};
+
+<EmojiPicker.Root
+  locale={locale}
+  resolveEmojiData={(locale, options) =>
+    myEmojiData[locale] ?? defaultEmojiDataResolver(locale, options)
+  }
+/>;
+```
+
+A resolver can return data synchronously or asynchronously, and receives the current locale along with `{ emojiVersion, emojibaseUrl, signal }`. Any string is accepted as a `locale`, and it’s only validated by `defaultEmojiDataResolver` (which falls back to `"en"` for locales Emojibase doesn’t support). Data you return yourself is used exactly as provided—no version or country-flag filtering is applied, so pre-filter it if needed.
+
+Resolvers are called once per locale (they’re not re-run when their identity changes), but if resolving is expensive you can cache the result across page loads with `createEmojiDataCache`, the same `localStorage` cache `defaultEmojiDataResolver` uses.
+
+```tsx
+import { createEmojiDataCache, type EmojiDataResolver } from "frimousse";
+
+const cache = createEmojiDataCache({ name: "my-app/emoji-data" });
+
+const resolveEmojiData: EmojiDataResolver = async (locale, options) => {
+  const cached = cache.get(locale);
+
+  if (cached) {
+    return cached.data;
+  }
+
+  const data = await fetchMyEmojiData(locale, options);
+
+  cache.set(locale, data);
+
+  return data;
+};
+```
+
+The data must describe standard Unicode emoji rendered as text; custom image or sprite-based emoji aren’t supported.
+
 ## Documentation
 
 Find the full documentation and examples on [frimousse.liveblocks.io](https://frimousse.liveblocks.io).
