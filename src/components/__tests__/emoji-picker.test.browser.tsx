@@ -2,9 +2,12 @@
 
 import { page, userEvent } from "@vitest/browser/context";
 import { Children, type ReactNode, useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { defaultEmojiDataResolver } from "../../data/emoji";
 import type {
   Emoji,
+  EmojiData,
+  EmojiDataResolver,
   EmojiPickerEmptyProps,
   EmojiPickerListProps,
   EmojiPickerRootProps,
@@ -30,9 +33,11 @@ function DefaultPage({
   rootChildren,
   emptyChildren = <div data-testid="empty">No emojis found</div>,
   sticky = true,
+  resolveEmojiData,
 }: {
   children?: ReactNode;
   locale?: EmojiPickerRootProps["locale"];
+  resolveEmojiData?: EmojiPickerRootProps["resolveEmojiData"];
   columns?: EmojiPickerRootProps["columns"];
   skinTone?: EmojiPickerRootProps["skinTone"];
   emojiVersion?: EmojiPickerRootProps["emojiVersion"];
@@ -60,6 +65,7 @@ function DefaultPage({
           emojiVersion={emojiVersion}
           locale={locale}
           onEmojiSelect={setSelectedEmoji}
+          resolveEmojiData={resolveEmojiData}
           skinTone={skinTone}
           sticky={sticky}
         >
@@ -535,92 +541,81 @@ describe("EmojiPicker.Viewport", () => {
   it.each([
     ["with sticky headers", true],
     ["without sticky headers", false],
-  ])(
-    "should virtualize rows based on the viewport height %s",
-    async (_, sticky) => {
-      function Page() {
-        const [viewportHeight, setViewportHeight] = useState(400);
-        const [rowHeight, setRowHeight] = useState(30);
-        const [categoryHeaderHeight, setCategoryHeaderHeight] = useState(30);
+  ])("should virtualize rows based on the viewport height %s", async (_, sticky) => {
+    function Page() {
+      const [viewportHeight, setViewportHeight] = useState(400);
+      const [rowHeight, setRowHeight] = useState(30);
+      const [categoryHeaderHeight, setCategoryHeaderHeight] = useState(30);
 
-        return (
-          <DefaultPage
-            listComponents={{
-              Row: ({ children, style, ...props }) => (
-                <div
-                  data-testid="custom-row"
-                  {...props}
-                  style={{ ...style, height: rowHeight }}
-                >
-                  {children}
-                </div>
-              ),
-              CategoryHeader: ({ category, style, ...props }) => (
-                <div
-                  data-testid="custom-category-header"
-                  {...props}
-                  style={{ ...style, height: categoryHeaderHeight }}
-                >
-                  {category.label}
-                </div>
-              ),
-            }}
-            sticky={sticky}
-          >
-            <input
-              data-testid="viewport-height"
-              onChange={(event) =>
-                setViewportHeight(Number(event.target.value))
-              }
-              type="number"
-              value={viewportHeight}
-            />
-            <input
-              data-testid="row-height"
-              onChange={(event) => setRowHeight(Number(event.target.value))}
-              type="number"
-              value={rowHeight}
-            />
-            <input
-              data-testid="category-header-height"
-              onChange={(event) =>
-                setCategoryHeaderHeight(Number(event.target.value))
-              }
-              type="number"
-              value={categoryHeaderHeight}
-            />
-          </DefaultPage>
-        );
-      }
+      return (
+        <DefaultPage
+          listComponents={{
+            Row: ({ children, style, ...props }) => (
+              <div
+                data-testid="custom-row"
+                {...props}
+                style={{ ...style, height: rowHeight }}
+              >
+                {children}
+              </div>
+            ),
+            CategoryHeader: ({ category, style, ...props }) => (
+              <div
+                data-testid="custom-category-header"
+                {...props}
+                style={{ ...style, height: categoryHeaderHeight }}
+              >
+                {category.label}
+              </div>
+            ),
+          }}
+          sticky={sticky}
+        >
+          <input
+            data-testid="viewport-height"
+            onChange={(event) => setViewportHeight(Number(event.target.value))}
+            type="number"
+            value={viewportHeight}
+          />
+          <input
+            data-testid="row-height"
+            onChange={(event) => setRowHeight(Number(event.target.value))}
+            type="number"
+            value={rowHeight}
+          />
+          <input
+            data-testid="category-header-height"
+            onChange={(event) =>
+              setCategoryHeaderHeight(Number(event.target.value))
+            }
+            type="number"
+            value={categoryHeaderHeight}
+          />
+        </DefaultPage>
+      );
+    }
 
-      page.render(<Page />);
+    page.render(<Page />);
 
-      await expect.element(page.getByText("😀")).toBeInTheDocument();
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
 
-      await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
-      await expect
-        .element(page.getByRole("row").nth(20))
-        .not.toBeInTheDocument();
+    await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
+    await expect.element(page.getByRole("row").nth(20)).not.toBeInTheDocument();
 
-      await page.getByTestId("viewport-height").fill("500");
-      await page.getByTestId("row-height").fill("20");
-      await page.getByTestId("category-header-height").fill("20");
+    await page.getByTestId("viewport-height").fill("500");
+    await page.getByTestId("row-height").fill("20");
+    await page.getByTestId("category-header-height").fill("20");
 
-      await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
-      await expect.element(page.getByRole("row").nth(20)).toBeInTheDocument();
+    await expect.element(page.getByRole("row").nth(10)).toBeInTheDocument();
+    await expect.element(page.getByRole("row").nth(20)).toBeInTheDocument();
 
-      await page.getByTestId("viewport-height").fill("200");
-      await page.getByTestId("row-height").fill("100");
-      await page.getByTestId("category-header-height").fill("400");
+    await page.getByTestId("viewport-height").fill("200");
+    await page.getByTestId("row-height").fill("100");
+    await page.getByTestId("category-header-height").fill("400");
 
-      await expect
-        .element(page.getByRole("row").nth(10))
-        .not.toBeInTheDocument();
-      await expect
-        .element(page.getByRole("row").nth(20))
-        .not.toBeInTheDocument();
-    },
-  );
+    await expect.element(page.getByRole("row").nth(10)).not.toBeInTheDocument();
+    await expect.element(page.getByRole("row").nth(20)).not.toBeInTheDocument();
+  });
 
   it.each([
     ["with sticky headers", true],
@@ -906,5 +901,141 @@ describe("EmojiPicker.SkinTone", () => {
     await expect
       .element(page.getByTestId("skin-tone"))
       .toHaveTextContent("dark");
+  });
+});
+
+describe("EmojiPicker with a custom emoji data resolver", () => {
+  // A custom, in-memory dataset for a non-Emojibase locale ("tr", Turkish)
+  // with Turkish labels/tags. This proves consumers can supply their own data
+  // and locales without any network requests.
+  const CUSTOM_EMOJI_DATA: EmojiData = {
+    locale: "tr",
+    categories: [{ index: 0, label: "Yüz ifadeleri" }],
+    skinTones: {
+      light: "🏻",
+      "medium-light": "🏼",
+      medium: "🏽",
+      "medium-dark": "🏾",
+      dark: "🏿",
+    },
+    emojis: [
+      {
+        emoji: "😀",
+        category: 0,
+        label: "sırıtan yüz",
+        version: 1,
+        tags: ["gülümseme", "mutlu"],
+        countryFlag: undefined,
+        skins: undefined,
+      },
+      {
+        emoji: "😍",
+        category: 0,
+        label: "kalp gözlü yüz",
+        version: 1,
+        tags: ["aşk", "kalp"],
+        countryFlag: undefined,
+        skins: undefined,
+      },
+      {
+        emoji: "🇹🇷",
+        category: 0,
+        label: "Türkiye bayrağı",
+        version: 1,
+        tags: ["bayrak"],
+        countryFlag: true,
+        skins: undefined,
+      },
+    ],
+  };
+
+  const resolveCustomEmojiData = () => CUSTOM_EMOJI_DATA;
+
+  it("should render custom data for a non-Emojibase locale without fetching", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    page.render(
+      <DefaultPage locale="tr" resolveEmojiData={resolveCustomEmojiData} />,
+    );
+
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
+    await expect.element(page.getByText("😍")).toBeInTheDocument();
+    await expect.element(page.getByText("🇹🇷")).toBeInTheDocument();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("should search custom data using custom labels and tags", async () => {
+    page.render(
+      <DefaultPage locale="tr" resolveEmojiData={resolveCustomEmojiData} />,
+    );
+
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
+
+    // Search by a Turkish tag ("aşk" = love) that only matches one emoji.
+    await page.getByTestId("search").fill("aşk");
+
+    await expect.element(page.getByText("😍")).toBeInTheDocument();
+    await expect.element(page.getByText("😀")).not.toBeInTheDocument();
+  });
+
+  it("should support selecting a custom emoji", async () => {
+    page.render(
+      <DefaultPage locale="tr" resolveEmojiData={resolveCustomEmojiData} />,
+    );
+
+    await page.getByText("🇹🇷").click();
+
+    await expect
+      .element(page.getByTestId("selected-emoji"))
+      .toHaveTextContent("🇹🇷");
+  });
+
+  it("should delegate unhandled locales to the default resolver", async () => {
+    page.render(
+      <DefaultPage
+        locale="en"
+        resolveEmojiData={(locale, options) =>
+          locale === "tr"
+            ? CUSTOM_EMOJI_DATA
+            : defaultEmojiDataResolver(locale, options)
+        }
+      />,
+    );
+
+    // Emojibase data for "en" is used, not the Turkish dataset.
+    await expect
+      .element(
+        page.getByRole("gridcell", { name: "Grinning face", exact: true }),
+      )
+      .toBeInTheDocument();
+    await expect
+      .element(page.getByRole("gridcell", { name: "sırıtan yüz" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("should not re-resolve when an inline resolver's identity changes", async () => {
+    const resolve = vi.fn<EmojiDataResolver>(() => CUSTOM_EMOJI_DATA);
+
+    page.render(
+      // The resolver is inline, so it's a new function on every render.
+      <DefaultPage locale="tr" resolveEmojiData={(...args) => resolve(...args)}>
+        <button data-testid="outside" type="button">
+          Outside
+        </button>
+      </DefaultPage>,
+    );
+
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+
+    // Focusing and blurring the picker re-renders its root.
+    await page.getByTestId("search").click();
+    await page.getByTestId("outside").click();
+
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
+
+    expect(resolve).toHaveBeenCalledTimes(1);
   });
 });
