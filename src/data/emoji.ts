@@ -5,6 +5,7 @@ import type {
   EmojibaseMessagesDataset,
   EmojiData,
   EmojiDataEmoji,
+  EmojiDataResolver,
   Locale,
   SkinTone,
 } from "../types";
@@ -12,6 +13,7 @@ import { capitalize } from "../utils/capitalize";
 import { isEmojiSupported } from "../utils/is-emoji-supported";
 import { getStorage, setStorage } from "../utils/storage";
 import * as $ from "../utils/validate";
+import { createEmojiDataCache } from "./emoji-data-cache";
 
 const EMOJIBASE_EMOJIS_URL = (baseUrl: string, locale: Locale) =>
   `${baseUrl}/${locale}/data.json`;
@@ -50,7 +52,6 @@ const EMOJIBASE_LOCALES = [
 ] satisfies Locale[];
 const EMOJIBASE_DEFAULT_LOCALE: Locale = "en";
 
-export const LOCAL_DATA_KEY = (locale: string) => `frimousse/data/${locale}`;
 export const SESSION_METADATA_KEY = "frimousse/metadata";
 
 // Prevent EMOJIBASE_LOCALES to be out of sync with Locale
@@ -63,25 +64,32 @@ export const SESSION_METADATA_KEY = "frimousse/metadata";
   _allLocalesPresent;
 }
 
-type GetEmojiDataOptions = {
-  locale: Locale;
-  emojiVersion?: number;
-  emojibaseUrl?: string;
-  signal?: AbortSignal;
+type EmojibaseMetadata = {
+  emojisEtag: string | null;
+  messagesEtag: string | null;
 };
 
-type LocalData = {
-  data: EmojiData;
-  metadata: {
-    emojisEtag: string | null;
-    messagesEtag: string | null;
-  };
-};
-
-type SessionMetadata = {
+type EmojiSupport = {
+  /**
+   * The highest Emoji version the current browser can render.
+   */
   emojiVersion: number;
+
+  /**
+   * Whether the current browser can render country flags.
+   */
   countryFlags: boolean;
 };
+
+type SessionMetadata = EmojiSupport & {
+  /**
+   * The locales whose cached data was already revalidated during this session,
+   * to only check ETags once per locale per session.
+   */
+  revalidated: string[];
+};
+
+const emojibaseCache = createEmojiDataCache<EmojibaseMetadata>();
 
 async function fetchEtag(url: string, signal?: AbortSignal) {
   try {
@@ -220,21 +228,15 @@ async function fetchEmojiData(
     skinTones,
   };
 
-  setStorage(localStorage, LOCAL_DATA_KEY(locale), {
-    data: emojiData,
-    metadata: {
-      emojisEtag,
-      messagesEtag,
-    },
-  });
+  emojibaseCache.set(locale, emojiData, { emojisEtag, messagesEtag });
 
   return emojiData;
 }
 
-function getSessionMetadata(
+function getEmojiSupport(
   emojis: EmojiDataEmoji[],
   emojiVersion?: number,
-): SessionMetadata {
+): EmojiSupport {
   const versionEmojis = new Map<number, string>();
 
   for (const emoji of emojis) {
@@ -275,123 +277,105 @@ function getSessionMetadata(
 const validateSessionMetadata = $.object<SessionMetadata>({
   emojiVersion: $.number,
   countryFlags: $.boolean,
+  revalidated: $.naiveArray($.string),
 });
 
-const validateLocalData = $.object<LocalData>({
-  data: $.object({
-    locale: $.string as $.Validator<Locale>,
-    emojis: $.naiveArray(
-      $.object({
-        emoji: $.string,
-        category: $.number,
-        label: $.string,
-        version: $.number,
-        tags: $.naiveArray($.string),
-        countryFlag: $.optional($.boolean as $.Validator<true>),
-        skins: $.optional(
-          $.object({
-            light: $.string,
-            "medium-light": $.string,
-            medium: $.string,
-            "medium-dark": $.string,
-            dark: $.string,
-          }),
-        ),
-      }),
-    ),
-    categories: $.naiveArray(
-      $.object({
-        index: $.number,
-        label: $.string,
-      }),
-    ),
-    skinTones: $.object({
-      light: $.string,
-      "medium-light": $.string,
-      medium: $.string,
-      "medium-dark": $.string,
-      dark: $.string,
-    }),
-  }),
-  metadata: $.object({
-    emojisEtag: $.nullable($.string),
-    messagesEtag: $.nullable($.string),
-  }),
-});
-
-export async function getEmojiData({
+/**
+ * The {@link EmojiDataResolver} used by default, which fetches, transforms, and
+ * caches {@link https://emojibase.dev/docs/datasets/ | Emojibase data}, and
+ * filters out emojis the current browser can't render.
+ *
+ * Use it to delegate the locales a custom resolver doesn't handle itself.
+ *
+ * @example
+ * ```tsx
+ * import { defaultEmojiDataResolver, EmojiPicker } from "frimousse";
+ *
+ * <EmojiPicker.Root
+ *   locale="tr"
+ *   resolveEmojiData={(locale, options) =>
+ *     locale === "tr" ? turkishEmojiData : defaultEmojiDataResolver(locale, options)
+ *   }
+ * >
+ * ```
+ */
+export const defaultEmojiDataResolver: EmojiDataResolver = async (
   locale,
-  emojiVersion,
-  emojibaseUrl,
-  signal,
-}: GetEmojiDataOptions): Promise<EmojiData> {
+  { emojiVersion, emojibaseUrl, signal } = {},
+) => {
+  const emojibaseLocale = validateLocale(locale);
   const baseUrl =
     typeof emojibaseUrl === "string"
       ? emojibaseUrl
       : `https://cdn.jsdelivr.net/npm/emojibase-data@${typeof emojiVersion === "number" ? Math.floor(emojiVersion) : "latest"}`;
-  let sessionMetadata = getStorage<SessionMetadata>(
+  const sessionMetadata = getStorage<SessionMetadata>(
     sessionStorage,
     SESSION_METADATA_KEY,
     validateSessionMetadata,
   );
-  const localData = getStorage<LocalData>(
-    localStorage,
-    LOCAL_DATA_KEY(locale),
-    validateLocalData,
-  );
+  const cached = emojibaseCache.get(emojibaseLocale);
 
   let data: EmojiData;
 
-  if (!localData) {
-    // No local data
-    data = await fetchEmojiData(baseUrl, locale, signal);
-  } else if (sessionMetadata) {
-    // ETags are used to check if the data is up-to-date but only
-    // once per session, so if the session metadata is already set,
-    // the local data can be used
-    data = localData.data;
+  if (!cached) {
+    // No cached data
+    data = await fetchEmojiData(baseUrl, emojibaseLocale, signal);
+  } else if (sessionMetadata?.revalidated.includes(emojibaseLocale)) {
+    // ETags are used to check if the cached data is up-to-date but only once
+    // per locale per session, so if this locale was already revalidated during
+    // this session, the cached data can be used
+    data = cached.data;
   } else {
-    // Check ETags to see if the local data is up-to-date,
-    // but if that fails, the possibly-stale local data is used
+    // Check ETags to see if the cached data is up-to-date,
+    // but if that fails, the possibly-stale cached data is used
     try {
       const { emojisEtag, messagesEtag } = await fetchEmojibaseEtags(
         baseUrl,
-        locale,
+        emojibaseLocale,
         signal,
       );
 
       data =
         !emojisEtag ||
         !messagesEtag ||
-        emojisEtag !== localData.metadata.emojisEtag ||
-        messagesEtag !== localData.metadata.messagesEtag
-          ? await fetchEmojiData(baseUrl, locale, signal)
-          : localData.data;
+        emojisEtag !== cached.metadata.emojisEtag ||
+        messagesEtag !== cached.metadata.messagesEtag
+          ? await fetchEmojiData(baseUrl, emojibaseLocale, signal)
+          : cached.data;
     } catch {
-      data = localData.data;
+      data = cached.data;
     }
   }
 
-  // Set the session metadata if needed
-  sessionMetadata ??= getSessionMetadata(data.emojis, emojiVersion);
-  setStorage(sessionStorage, SESSION_METADATA_KEY, sessionMetadata);
+  // Detect the browser's Emoji support if needed, and mark this locale as
+  // revalidated for the rest of the session
+  const support: EmojiSupport =
+    sessionMetadata ?? getEmojiSupport(data.emojis, emojiVersion);
+  const revalidated = sessionMetadata?.revalidated ?? [];
+
+  setStorage(sessionStorage, SESSION_METADATA_KEY, {
+    ...support,
+    revalidated: revalidated.includes(emojibaseLocale)
+      ? revalidated
+      : [...revalidated, emojibaseLocale],
+  } satisfies SessionMetadata);
 
   // Filter out unsupported emojis
   const filteredEmojis = data.emojis.filter((emoji) => {
-    const isSupportedVersion = emoji.version <= sessionMetadata.emojiVersion;
+    const isSupportedVersion = emoji.version <= support.emojiVersion;
 
     return emoji.countryFlag
-      ? isSupportedVersion && sessionMetadata.countryFlags
+      ? isSupportedVersion && support.countryFlags
       : isSupportedVersion;
   });
 
   return {
-    locale,
+    locale: emojibaseLocale,
     emojis: filteredEmojis,
     categories: data.categories,
     skinTones: data.skinTones,
   };
-}
+};
 
 export function validateLocale(locale: string): Locale {
   if (!EMOJIBASE_LOCALES.includes(locale as Locale)) {
