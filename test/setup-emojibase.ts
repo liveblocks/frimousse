@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, vi } from "vitest";
-import createFetchMock from "vitest-fetch-mock";
 
 const EMOJIBASE_URL_REGEX = /\/(\w+)\/(\w+\.json)$/;
 
-const fetchMocker = createFetchMock(vi);
-fetchMocker.enableMocks();
+const DATASETS: Record<string, () => Promise<{ default: unknown }>> = {
+  "en/data.json": () => import("emojibase-data/en/data.json"),
+  "en/messages.json": () => import("emojibase-data/en/messages.json"),
+  "fr/data.json": () => import("emojibase-data/fr/data.json"),
+  "fr/messages.json": () => import("emojibase-data/fr/messages.json"),
+};
 
 function hash(value: string) {
   let hash = 0;
@@ -17,100 +20,62 @@ function hash(value: string) {
   return hash.toString(16);
 }
 
+/**
+ * Rejects as soon as `signal` is aborted, otherwise resolves with `promise`.
+ * `fetch` is mocked so it wouldn't handle abort signals on its own.
+ */
+function abortable<T>(promise: Promise<T>, signal?: AbortSignal | null) {
+  if (!signal) {
+    return promise;
+  }
+
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      if (signal.aborted) {
+        reject(signal.reason);
+      } else {
+        signal.addEventListener("abort", () => reject(signal.reason), {
+          once: true,
+        });
+      }
+    }),
+  ]);
+}
+
 beforeEach(() => {
-  fetchMocker.mockIf(EMOJIBASE_URL_REGEX, async (req) => {
-    const [, locale, file] = req.url.match(EMOJIBASE_URL_REGEX) ?? [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
 
-    if (locale === "en" && file === "data.json") {
-      const headers: HeadersInit = {
-        ETag: hash("en/data.json"),
-      };
+      return await abortable(
+        (async () => {
+          const [, locale, file] = url.match(EMOJIBASE_URL_REGEX) ?? [];
+          const dataset = DATASETS[`${locale}/${file}`];
 
-      if (req.method === "GET") {
-        const data = (await import("emojibase-data/en/data.json")).default;
-        return {
-          body: JSON.stringify(data),
-          headers,
-        };
-      }
+          if (!dataset) {
+            throw new Error(`Unhandled URL: ${url}`);
+          }
 
-      if (req.method === "HEAD") {
-        return {
-          status: 200,
-          headers,
-        };
-      }
-    }
+          const headers = new Headers({ ETag: hash(`${locale}/${file}`) });
 
-    if (locale === "en" && file === "messages.json") {
-      const headers: HeadersInit = {
-        ETag: hash("en/messages.json"),
-      };
+          if (method === "HEAD") {
+            return new Response(null, { status: 200, headers });
+          }
 
-      if (req.method === "GET") {
-        const messages = (await import("emojibase-data/en/messages.json"))
-          .default;
-        return {
-          body: JSON.stringify(messages),
-          headers,
-        };
-      }
+          const data = (await dataset()).default;
 
-      if (req.method === "HEAD") {
-        return {
-          status: 200,
-          headers,
-        };
-      }
-    }
-
-    if (locale === "fr" && file === "data.json") {
-      const headers: HeadersInit = {
-        ETag: hash("fr/data.json"),
-      };
-
-      if (req.method === "GET") {
-        const data = (await import("emojibase-data/fr/data.json")).default;
-        return {
-          body: JSON.stringify(data),
-          headers,
-        };
-      }
-
-      if (req.method === "HEAD") {
-        return {
-          status: 200,
-          headers,
-        };
-      }
-    }
-
-    if (locale === "fr" && file === "messages.json") {
-      const headers: HeadersInit = {
-        ETag: hash("fr/messages.json"),
-      };
-
-      if (req.method === "GET") {
-        const messages = (await import("emojibase-data/fr/messages.json"))
-          .default;
-        return {
-          body: JSON.stringify(messages),
-          headers,
-        };
-      }
-
-      if (req.method === "HEAD") {
-        return {
-          status: 200,
-          headers,
-        };
-      }
-    }
-
-    throw new Error(`Unhandled URL: ${req.url}`);
-  });
+          return new Response(JSON.stringify(data), { status: 200, headers });
+        })(),
+        init?.signal,
+      );
+    }),
+  );
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });

@@ -1,21 +1,26 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getEmojiData, LOCAL_DATA_KEY, SESSION_METADATA_KEY } from "../emoji";
+import { defaultEmojiDataResolver, SESSION_METADATA_KEY } from "../emoji";
+import { createEmojiDataCache } from "../emoji-data-cache";
 
-describe("getEmojiData", () => {
+const cache = createEmojiDataCache();
+
+describe("defaultEmojiDataResolver", () => {
   afterEach(() => {
     localStorage.clear();
     sessionStorage.clear();
   });
 
   it("should return the emoji data", async () => {
-    const data = await getEmojiData({ locale: "en" });
+    const data = await defaultEmojiDataResolver("en", {});
 
     expect(data).toBeDefined();
   });
 
   it("should support aborting the request", async () => {
     const controller = new AbortController();
-    const promise = getEmojiData({ locale: "en", signal: controller.signal });
+    const promise = defaultEmojiDataResolver("en", {
+      signal: controller.signal,
+    });
 
     controller.abort();
 
@@ -24,7 +29,7 @@ describe("getEmojiData", () => {
 
   it("should support a specific Emoji version", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const data = await getEmojiData({ locale: "en", emojiVersion: 5 });
+    const data = await defaultEmojiDataResolver("en", { emojiVersion: 5 });
 
     expect(data).toBeDefined();
     expect(data.emojis.every((emoji) => emoji.version <= 5)).toBe(true);
@@ -39,8 +44,7 @@ describe("getEmojiData", () => {
 
   it("should support a custom Emojibase URL", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const data = await getEmojiData({
-      locale: "en",
+    const data = await defaultEmojiDataResolver("en", {
       emojibaseUrl: "https://example.com/self-hosted-emojibase-data",
     });
 
@@ -54,24 +58,34 @@ describe("getEmojiData", () => {
     );
   });
 
-  it("should save data locally", async () => {
-    await getEmojiData({ locale: "en" });
+  it("should fall back to the default locale when the locale isn't supported by Emojibase", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const data = await defaultEmojiDataResolver("tr", {});
 
-    const localStorageData = localStorage.getItem(LOCAL_DATA_KEY("en"));
+    expect(data.locale).toBe("en");
+    expect(warnSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
+
+  it("should save data locally", async () => {
+    await defaultEmojiDataResolver("en", {});
+
+    const cached = cache.get("en");
     const sessionStorageData = sessionStorage.getItem(SESSION_METADATA_KEY);
 
-    expect(localStorageData).not.toBeNull();
+    expect(cached).not.toBeNull();
     expect(sessionStorageData).not.toBeNull();
   });
 
   it("should use local data if available from a previous session", async () => {
-    await getEmojiData({ locale: "en" });
+    await defaultEmojiDataResolver("en", {});
 
     sessionStorage.clear();
 
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    await getEmojiData({ locale: "en" });
+    await defaultEmojiDataResolver("en", {});
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy.mock.calls[0]).toEqual([
@@ -84,13 +98,41 @@ describe("getEmojiData", () => {
     ]);
   });
 
+  it("should only revalidate a locale once per session", async () => {
+    await defaultEmojiDataResolver("en", {});
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await defaultEmojiDataResolver("en", {});
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("should revalidate each locale separately", async () => {
+    // Cache both locales, then start from a fresh session.
+    await defaultEmojiDataResolver("en", {});
+    await defaultEmojiDataResolver("fr", {});
+
+    sessionStorage.clear();
+
+    await defaultEmojiDataResolver("en", {});
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    // Revalidating "en" shouldn't mark "fr" as revalidated too.
+    await defaultEmojiDataResolver("fr", {});
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0]?.[1]).toMatchObject({ method: "HEAD" });
+  });
+
   it("should not use broken local data", async () => {
-    localStorage.setItem(LOCAL_DATA_KEY("en"), "{}");
+    localStorage.setItem("frimousse/data/en", "{}");
     sessionStorage.setItem(SESSION_METADATA_KEY, "{}");
 
-    await getEmojiData({ locale: "en" });
+    await defaultEmojiDataResolver("en", {});
 
-    const localStorageData = localStorage.getItem(LOCAL_DATA_KEY("en"));
+    const localStorageData = localStorage.getItem("frimousse/data/en");
     const sessionStorageData = sessionStorage.getItem(SESSION_METADATA_KEY);
 
     expect(localStorageData).not.toBe("{}");

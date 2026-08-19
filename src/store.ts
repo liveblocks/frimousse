@@ -14,7 +14,7 @@ const VIEWPORT_OVERSCAN = 2;
 type Interaction = "keyboard" | "pointer" | "none";
 
 export type EmojiPickerStore = {
-  locale: Locale;
+  locale: Locale | (string & {});
   columns: number;
   sticky: boolean;
   skinTone: SkinTone;
@@ -58,7 +58,7 @@ export type EmojiPickerStore = {
 
 export function createEmojiPickerStore(
   onEmojiSelect: NonNullable<EmojiPickerRootProps["onEmojiSelect"]>,
-  initialLocale: Locale,
+  initialLocale: Locale | (string & {}),
   initialColumns: number,
   initialSticky: boolean,
   initialSkinTone: SkinTone,
