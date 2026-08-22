@@ -11,9 +11,6 @@
   },
   "linter": {
     "rules": {
-      "suspicious": {
-        "noUnknownAtRules": "off"
-      },
       "nursery": {
         "useSortedClasses": {
           "fix": "safe",
@@ -27,7 +24,8 @@
   },
   "css": {
     "parser": {
-      "cssModules": true
+      "cssModules": true,
+      "tailwindDirectives": true
     }
   }
 }

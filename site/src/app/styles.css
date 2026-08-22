@@ -66,7 +66,7 @@
 
   --font-sans: var(--font-inter), sans-serif;
   --font-sans-feature-settings: "liga" 1, "calt" 1;
-  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-mono: var(--font-geist-mono), monospace;
 
   --text-base: var(--text-base);
   --text-sm: var(--text-sm);

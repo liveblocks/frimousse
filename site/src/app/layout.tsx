@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import type { PropsWithChildren } from "react";
@@ -15,9 +15,9 @@ const inter = localFont({
   variable: "--font-inter",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: PropsWithChildren) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.variable, jetbrainsMono.variable)}>
+      <body className={cn(inter.variable, geistMono.variable)}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

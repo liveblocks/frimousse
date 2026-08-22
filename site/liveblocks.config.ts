@@ -27,18 +27,87 @@ export const DEFAULT_KEYS_COUNT = DEFAULT_KEYS.length;
 // Roughly 3 rows of reactions on largest breakpoint
 export const MAX_REACTIONS = 30;
 
+// `null` in engines without support for the `v` flag, in which case
+// reactions aren't filtered
+const RGI_EMOJI = (() => {
+  try {
+    return new RegExp("^\\p{RGI_Emoji}$", "v");
+  } catch {
+    return null;
+  }
+})();
+
+const LETTERS = /\p{L}/u;
+
+// Clients have write access to the room so reaction keys can't be trusted
+// to be emojis: anything that isn't exactly one RGI emoji is hidden.
+export function isEmojiReaction(emoji: string): boolean {
+  return RGI_EMOJI ? RGI_EMOJI.test(emoji) : true;
+}
+
+// Deletion is more conservative than hiding: an emoji too recent for this
+// engine's Unicode data fails the RGI test but contains no letters, so it
+// is hidden here without being deleted for everyone else.
+export function isJunkReaction(emoji: string): boolean {
+  return !isEmojiReaction(emoji) && LETTERS.test(emoji);
+}
+
+// Timestamps can't be trusted either, anything that isn't a number sorts as 0
+function getTimestamp(value: unknown): number {
+  return typeof value === "number" ? value : 0;
+}
+
 export function sortReactions(
   [, dataA]: [string, LiveMap<string, number> | ReadonlyMap<string, number>],
   [, dataB]: [string, LiveMap<string, number> | ReadonlyMap<string, number>],
 ) {
-  return (dataB.get(CREATED_AT_KEY) ?? 0) - (dataA.get(CREATED_AT_KEY) ?? 0);
+  return (
+    getTimestamp(dataB.get(CREATED_AT_KEY)) -
+    getTimestamp(dataA.get(CREATED_AT_KEY))
+  );
 }
 
 export function sortReactionsEntries(
   [, dataA]: ReactionsJsonEntries[number],
   [, dataB]: ReactionsJsonEntries[number],
 ) {
-  return (dataB[CREATED_AT_KEY] ?? 0) - (dataA[CREATED_AT_KEY] ?? 0);
+  return (
+    getTimestamp(dataB[CREATED_AT_KEY]) - getTimestamp(dataA[CREATED_AT_KEY])
+  );
+}
+
+// A reaction is visible iff its key is an emoji and it has at least one vote.
+// Returns visible reactions filtered, sorted, and counted, ready to render.
+export function getVisibleReactions(
+  reactions: ReadonlyMap<string, ReadonlyMap<string, number>>,
+): [emoji: string, count: number, data: ReadonlyMap<string, number>][] {
+  return Array.from(reactions)
+    .filter(([emoji]) => isEmojiReaction(emoji))
+    .sort(sortReactions)
+    .map(
+      ([emoji, data]): [string, number, ReadonlyMap<string, number>] => [
+        emoji,
+        data.size - DEFAULT_KEYS_COUNT,
+        data,
+      ],
+    )
+    .filter(([, count]) => count > 0);
+}
+
+export function getVisibleReactionsEntries(
+  reactions: ReactionsJson,
+): [emoji: string, count: number, data: Record<string, number>][] {
+  return Object.entries(reactions)
+    .filter(([emoji]) => isEmojiReaction(emoji))
+    .sort(sortReactionsEntries)
+    .map(
+      ([emoji, data]): [string, number, Record<string, number>] => [
+        emoji,
+        Object.keys(data).length - DEFAULT_KEYS_COUNT,
+        data,
+      ],
+    )
+    .filter(([, count]) => count > 0);
 }
 
 function createDefaultReactions(emojis: string[]) {
