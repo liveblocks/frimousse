@@ -68,6 +68,7 @@ export function getEmojiPickerData(
           ? emoji.skins[skinTone]
           : emoji.emoji,
       label: emoji.label,
+      isCustom: emoji.isCustom,
     });
   }
 
@@ -90,6 +91,8 @@ export function getEmojiPickerData(
       label: category.label,
       rowsCount: categoryRows.length,
       startRowIndex,
+      icon: category.icon,
+      isCustomIcon: category.isCustomIcon,
     });
 
     categoriesStartRowIndices.push(startRowIndex);

@@ -3,6 +3,7 @@ import type { ComponentProps } from "react";
 import { ColorfulButtonsAlternate } from "@/examples/colorful-buttons/colorful-buttons-alternate";
 import { ColorfulButtonsBlur } from "@/examples/colorful-buttons/colorful-buttons-blur";
 import { ShadcnUi } from "@/examples/shadcnui/shadcnui";
+import { ShadcnUiCustomEmojis } from "@/examples/shadcnui/shadcnui-custom-emojis";
 import { ShadcnUiPopover } from "@/examples/shadcnui/shadcnui-popover";
 import { Usage } from "@/examples/usage/usage";
 import { cn } from "@/lib/utils";
@@ -150,6 +151,11 @@ export function Docs({
         .
       </p>
       <ShadcnUiPopover />
+      <p>
+        You can also add custom emojis to the picker by providing{" "}
+        <code>customEmojis</code> and <code>customCategories</code> props.
+      </p>
+      <ShadcnUiCustomEmojis />
 
       <PermalinkHeading as="h2">Styling</PermalinkHeading>
       <p>Various styling-related details and examples.</p>
