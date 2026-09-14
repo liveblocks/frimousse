@@ -19,6 +19,8 @@ const EMOJIBASE_EMOJIS_URL = (baseUrl: string, locale: EmojibaseLocale) =>
   `${baseUrl}/${locale}/data.json`;
 const EMOJIBASE_MESSAGES_URL = (baseUrl: string, locale: EmojibaseLocale) =>
   `${baseUrl}/${locale}/messages.json`;
+export const DEFAULT_EMOJIBASE_URL =
+  "https://cdn.jsdelivr.net/npm/emojibase-data@latest";
 
 const EMOJIBASE_LOCALES = [
   "bn",
@@ -78,9 +80,15 @@ type EmojiSupport = {
   countryFlags: boolean;
 };
 
-type SessionMetadata = EmojiSupport & {
+type SessionMetadata = Partial<EmojiSupport> & {
   revalidated: string[];
 };
+
+const loadedData = new Map<string, EmojiData>();
+const pendingData = new Map<
+  string,
+  { promise: Promise<EmojiData>; controller: AbortController; callers: number }
+>();
 
 function createEmojibaseCache(baseUrl: string) {
   return createEmojiDataCache<EmojibaseMetadata>({
@@ -177,6 +185,7 @@ async function fetchEmojiData(
 ): Promise<EmojiData> {
   const { emojis, emojisEtag, messages, messagesEtag } =
     await fetchEmojibaseData(baseUrl, locale, signal);
+  signal?.throwIfAborted();
   const countryFlagsSubgroup = messages.subgroups.find(
     (subgroup) =>
       subgroup.key === "country-flag" || subgroup.key === "subdivision-flag",
@@ -265,10 +274,137 @@ function getEmojiSupport(emojis: EmojiDataEmoji[]): EmojiSupport {
 }
 
 const validateSessionMetadata = $.object<SessionMetadata>({
-  emojiVersion: $.number,
-  countryFlags: $.boolean,
+  emojiVersion: $.optional($.number),
+  countryFlags: $.optional($.boolean),
   revalidated: $.naiveArray($.string),
 });
+
+function getSessionMetadata(baseUrl: string) {
+  try {
+    return getStorage(
+      sessionStorage,
+      SESSION_METADATA_KEY(baseUrl),
+      validateSessionMetadata,
+    );
+  } catch {
+    return null;
+  }
+}
+
+function setSessionMetadata(baseUrl: string, metadata: SessionMetadata) {
+  try {
+    setStorage(sessionStorage, SESSION_METADATA_KEY(baseUrl), metadata);
+  } catch {}
+}
+
+export function loadEmojiData(
+  baseUrl: string,
+  locale: EmojibaseLocale,
+  signal?: AbortSignal,
+): Promise<EmojiData> {
+  if (signal?.aborted) {
+    return Promise.reject(signal.reason);
+  }
+
+  const key = EMOJIBASE_EMOJIS_URL(baseUrl, locale);
+  const data = loadedData.get(key);
+
+  if (data) {
+    return Promise.resolve(data);
+  }
+
+  let pending = pendingData.get(key);
+
+  if (!pending || pending.controller.signal.aborted) {
+    const controller = new AbortController();
+    const promise = readEmojiData(baseUrl, locale, controller.signal)
+      .then((data) => {
+        controller.signal.throwIfAborted();
+        loadedData.set(key, data);
+        return data;
+      })
+      .finally(() => {
+        if (pendingData.get(key)?.promise === promise) {
+          pendingData.delete(key);
+        }
+      });
+
+    pending = { promise, controller, callers: 0 };
+    pendingData.set(key, pending);
+  }
+
+  const request = pending;
+  request.callers++;
+  let onAbort: () => void;
+
+  return new Promise<EmojiData>((resolve, reject) => {
+    onAbort = () => reject(signal?.reason);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    request.promise.then(resolve, reject);
+  }).finally(() => {
+    signal?.removeEventListener("abort", onAbort);
+    request.callers--;
+
+    // A caller must not cancel a load that another picker or lookup still needs.
+    if (request.callers === 0 && pendingData.get(key) === request) {
+      request.controller.abort();
+    }
+  });
+}
+
+async function readEmojiData(
+  baseUrl: string,
+  locale: EmojibaseLocale,
+  signal: AbortSignal,
+): Promise<EmojiData> {
+  const sessionMetadata = getSessionMetadata(baseUrl);
+  const cached = createEmojibaseCache(baseUrl).get(locale);
+
+  let data: EmojiData;
+
+  if (!cached) {
+    // No cached data
+    data = await fetchEmojiData(baseUrl, locale, signal);
+  } else if (sessionMetadata?.revalidated.includes(locale)) {
+    // Check ETags only once per locale per session
+    data = cached.data;
+  } else {
+    // Check ETags to see if the cached data is up-to-date,
+    // but if that fails, the possibly-stale cached data is used
+    try {
+      const { emojisEtag, messagesEtag } = await fetchEmojibaseEtags(
+        baseUrl,
+        locale,
+        signal,
+      );
+      signal.throwIfAborted();
+
+      data =
+        !emojisEtag ||
+        !messagesEtag ||
+        emojisEtag !== cached.metadata.emojisEtag ||
+        messagesEtag !== cached.metadata.messagesEtag
+          ? await fetchEmojiData(baseUrl, locale, signal)
+          : cached.data;
+    } catch {
+      signal.throwIfAborted();
+      data = cached.data;
+    }
+  }
+
+  signal.throwIfAborted();
+  const metadata = getSessionMetadata(baseUrl);
+  const revalidated = metadata?.revalidated ?? [];
+
+  setSessionMetadata(baseUrl, {
+    ...metadata,
+    revalidated: revalidated.includes(locale)
+      ? revalidated
+      : [...revalidated, locale],
+  });
+
+  return data;
+}
 
 /**
  * Fetches and caches Emojibase data, filtering out unsupported emojis.
@@ -280,56 +416,26 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
 ) => {
   const emojibaseLocale = validateLocale(locale);
   const baseUrl =
-    typeof emojibaseUrl === "string"
-      ? emojibaseUrl
-      : `https://cdn.jsdelivr.net/npm/emojibase-data@${typeof emojiVersion === "number" ? Math.floor(emojiVersion) : "latest"}`;
-  const sessionMetadata = getStorage<SessionMetadata>(
-    sessionStorage,
-    SESSION_METADATA_KEY(baseUrl),
-    validateSessionMetadata,
-  );
-  const cached = createEmojibaseCache(baseUrl).get(emojibaseLocale);
+    emojibaseUrl ??
+    (typeof emojiVersion === "number"
+      ? `https://cdn.jsdelivr.net/npm/emojibase-data@${Math.floor(emojiVersion)}`
+      : DEFAULT_EMOJIBASE_URL);
+  const data = await loadEmojiData(baseUrl, emojibaseLocale, signal);
+  signal?.throwIfAborted();
+  const sessionMetadata = getSessionMetadata(baseUrl);
+  const support: EmojiSupport =
+    sessionMetadata?.emojiVersion !== undefined &&
+    sessionMetadata.countryFlags !== undefined
+      ? {
+          emojiVersion: sessionMetadata.emojiVersion,
+          countryFlags: sessionMetadata.countryFlags,
+        }
+      : getEmojiSupport(data.emojis);
 
-  let data: EmojiData;
-
-  if (!cached) {
-    // No cached data
-    data = await fetchEmojiData(baseUrl, emojibaseLocale, signal);
-  } else if (sessionMetadata?.revalidated.includes(emojibaseLocale)) {
-    // Check ETags only once per locale per session
-    data = cached.data;
-  } else {
-    // Check ETags to see if the cached data is up-to-date,
-    // but if that fails, the possibly-stale cached data is used
-    try {
-      const { emojisEtag, messagesEtag } = await fetchEmojibaseEtags(
-        baseUrl,
-        emojibaseLocale,
-        signal,
-      );
-
-      data =
-        !emojisEtag ||
-        !messagesEtag ||
-        emojisEtag !== cached.metadata.emojisEtag ||
-        messagesEtag !== cached.metadata.messagesEtag
-          ? await fetchEmojiData(baseUrl, emojibaseLocale, signal)
-          : cached.data;
-    } catch {
-      data = cached.data;
-    }
-  }
-
-  // Cache browser support and mark this locale as revalidated
-  const support: EmojiSupport = sessionMetadata ?? getEmojiSupport(data.emojis);
-  const revalidated = sessionMetadata?.revalidated ?? [];
-
-  setStorage(sessionStorage, SESSION_METADATA_KEY(baseUrl), {
+  setSessionMetadata(baseUrl, {
     ...support,
-    revalidated: revalidated.includes(emojibaseLocale)
-      ? revalidated
-      : [...revalidated, emojibaseLocale],
-  } satisfies SessionMetadata);
+    revalidated: sessionMetadata?.revalidated ?? [emojibaseLocale],
+  });
 
   // Filter out unsupported emojis
   const filteredEmojis = data.emojis.filter((emoji) => {

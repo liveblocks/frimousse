@@ -39,6 +39,8 @@ export type SkinToneVariation = {
 
 export type Emoji = Resolve<EmojiPickerEmoji>;
 
+export type EmojiDetails = Resolve<EmojiDataEmoji>;
+
 export type Category = Resolve<EmojiPickerCategory>;
 
 export type EmojiDataEmoji = {
@@ -66,6 +68,7 @@ export type EmojiData = {
 export type EmojiDataResolverOptions = {
   emojiVersion?: number;
   emojibaseUrl?: string;
+
   /**
    * Aborted when the picker unmounts or its data needs to be loaded again.
    */

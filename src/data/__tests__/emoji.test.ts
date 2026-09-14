@@ -1,11 +1,19 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { defaultEmojiDataResolver, SESSION_METADATA_KEY } from "../emoji";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SESSION_METADATA_KEY } from "../emoji";
 import { createEmojiDataCache } from "../emoji-data-cache";
 
 const EMOJIBASE_URL = "https://cdn.jsdelivr.net/npm/emojibase-data@latest";
 const cache = createEmojiDataCache({ name: `frimousse/data/${EMOJIBASE_URL}` });
+let defaultEmojiDataResolver: typeof import("../emoji").defaultEmojiDataResolver;
+
+async function reload() {
+  vi.resetModules();
+  ({ defaultEmojiDataResolver } = await import("../emoji"));
+}
 
 describe("defaultEmojiDataResolver", () => {
+  beforeEach(reload);
+
   afterEach(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -87,14 +95,21 @@ describe("defaultEmojiDataResolver", () => {
 
     sessionStorage.clear();
 
+    await reload();
     await defaultEmojiDataResolver("en", {});
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await defaultEmojiDataResolver("en", { emojibaseUrl });
 
     expect(fetchSpy.mock.calls).toEqual([
-      [`${emojibaseUrl}/en/data.json`, { method: "HEAD" }],
-      [`${emojibaseUrl}/en/messages.json`, { method: "HEAD" }],
+      [
+        `${emojibaseUrl}/en/data.json`,
+        { method: "HEAD", signal: expect.any(AbortSignal) },
+      ],
+      [
+        `${emojibaseUrl}/en/messages.json`,
+        { method: "HEAD", signal: expect.any(AbortSignal) },
+      ],
     ]);
   });
 
@@ -165,6 +180,7 @@ describe("defaultEmojiDataResolver", () => {
 
     sessionStorage.clear();
 
+    await reload();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await defaultEmojiDataResolver("en", {});
@@ -172,11 +188,11 @@ describe("defaultEmojiDataResolver", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy.mock.calls[0]).toEqual([
       "https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/data.json",
-      { method: "HEAD" },
+      { method: "HEAD", signal: expect.any(AbortSignal) },
     ]);
     expect(fetchSpy.mock.calls[1]).toEqual([
       "https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/messages.json",
-      { method: "HEAD" },
+      { method: "HEAD", signal: expect.any(AbortSignal) },
     ]);
   });
 
@@ -196,6 +212,7 @@ describe("defaultEmojiDataResolver", () => {
 
     sessionStorage.clear();
 
+    await reload();
     await defaultEmojiDataResolver("en", {});
 
     const fetchSpy = vi.spyOn(globalThis, "fetch");

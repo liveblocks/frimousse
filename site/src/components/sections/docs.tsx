@@ -209,6 +209,37 @@ export function Docs({
         sprite-based emojis aren’t supported.
       </p>
 
+      <PermalinkHeading as="h3">Looking up an emoji</PermalinkHeading>
+      <p>
+        Use <code>getEmojiDetails</code> to get a stored emoji’s localized
+        label and search tags without mounting a picker.
+      </p>
+      <CodeBlock lang="ts">{`
+        import { getEmojiDetails } from "frimousse";
+
+        const emoji = await getEmojiDetails("👍🏽", { locale: "en" });
+
+        emoji?.label; // "Thumbs up"
+        emoji?.tags;
+      `}</CodeBlock>
+      <p>
+        Returns <code>EmojiDetails</code> or <code>undefined</code> when no match
+        exists. Skin-tone variants return their base entry, and variation
+        selectors are optional. Loading errors reject the promise.
+      </p>
+      <p>
+        The default source shares cached data and pending requests with the
+        picker, but doesn’t filter out emojis the browser can’t render. Each
+        dataset is indexed once, so repeated lookups don’t scan the emoji list.
+      </p>
+      <p>
+        Options include <code>locale</code> (defaults to <code>en</code>),{" "}
+        <code>emojibaseUrl</code>, <code>signal</code>, and{" "}
+        <code>resolveEmojiData</code>. Custom resolvers control their own
+        loading and caching; replace their <code>emojis</code> array when its
+        entries change to rebuild the lookup index.
+      </p>
+
       <PermalinkHeading as="h2">Styling</PermalinkHeading>
       <p>Various styling-related details and examples.</p>
 
