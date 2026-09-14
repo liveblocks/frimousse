@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultEmojiDataResolver, SESSION_METADATA_KEY } from "../emoji";
 import { createEmojiDataCache } from "../emoji-data-cache";
 
-const cache = createEmojiDataCache();
+const EMOJIBASE_URL = "https://cdn.jsdelivr.net/npm/emojibase-data@latest";
+const cache = createEmojiDataCache({ name: `frimousse/data/${EMOJIBASE_URL}` });
 
 describe("defaultEmojiDataResolver", () => {
   afterEach(() => {
@@ -58,6 +59,85 @@ describe("defaultEmojiDataResolver", () => {
     );
   });
 
+  it("should fetch a new source and reuse each source's cached data", async () => {
+    const original = await defaultEmojiDataResolver("en", {});
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const emojibaseUrl = "https://example.com/self-hosted-emojibase-data";
+
+    await defaultEmojiDataResolver("en", { emojibaseUrl });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls.map(([url]) => url)).toEqual([
+      `${emojibaseUrl}/en/data.json`,
+      `${emojibaseUrl}/en/messages.json`,
+    ]);
+
+    fetchSpy.mockClear();
+
+    expect(await defaultEmojiDataResolver("en", {})).toEqual(original);
+    await defaultEmojiDataResolver("en", { emojibaseUrl });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("should revalidate each source separately in a new session", async () => {
+    const emojibaseUrl = "https://example.com/self-hosted-emojibase-data";
+    await defaultEmojiDataResolver("en", {});
+    await defaultEmojiDataResolver("en", { emojibaseUrl });
+
+    sessionStorage.clear();
+
+    await defaultEmojiDataResolver("en", {});
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await defaultEmojiDataResolver("en", { emojibaseUrl });
+
+    expect(fetchSpy.mock.calls).toEqual([
+      [`${emojibaseUrl}/en/data.json`, { method: "HEAD" }],
+      [`${emojibaseUrl}/en/messages.json`, { method: "HEAD" }],
+    ]);
+  });
+
+  it.each([
+    [16, 5],
+    [5, 16],
+  ])("should switch from Emoji version %s to %s", async (from, to) => {
+    await defaultEmojiDataResolver("en", { emojiVersion: from });
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const data = await defaultEmojiDataResolver("en", { emojiVersion: to });
+
+    expect(fetchSpy.mock.calls.map(([url]) => url)).toEqual([
+      `https://cdn.jsdelivr.net/npm/emojibase-data@${to}/en/data.json`,
+      `https://cdn.jsdelivr.net/npm/emojibase-data@${to}/en/messages.json`,
+    ]);
+    expect(data.emojis.length).toBeGreaterThan(0);
+    expect(Math.max(...data.emojis.map((emoji) => emoji.version))).toBe(to);
+  });
+
+  it.each([undefined, 5])(
+    "should apply version changes to cached data from a fixed source (initial version: %s)",
+    async (emojiVersion) => {
+      const emojibaseUrl = "https://example.com/self-hosted-emojibase-data";
+      await defaultEmojiDataResolver("en", { emojibaseUrl, emojiVersion });
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+      for (const version of [5, 12, 12.1, 16, undefined]) {
+        const data = await defaultEmojiDataResolver("en", {
+          emojibaseUrl,
+          emojiVersion: version,
+        });
+
+        expect(data.emojis.length).toBeGreaterThan(0);
+        expect(Math.max(...data.emojis.map((emoji) => emoji.version))).toBe(
+          version ?? 16,
+        );
+      }
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
+
   it("should fall back to the default locale when the locale isn't supported by Emojibase", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const data = await defaultEmojiDataResolver("unsupported", {});
@@ -72,7 +152,9 @@ describe("defaultEmojiDataResolver", () => {
     await defaultEmojiDataResolver("en", {});
 
     const cached = cache.get("en");
-    const sessionStorageData = sessionStorage.getItem(SESSION_METADATA_KEY);
+    const sessionStorageData = sessionStorage.getItem(
+      SESSION_METADATA_KEY(EMOJIBASE_URL),
+    );
 
     expect(cached).not.toBeNull();
     expect(sessionStorageData).not.toBeNull();
@@ -125,13 +207,16 @@ describe("defaultEmojiDataResolver", () => {
   });
 
   it("should not use broken local data", async () => {
-    localStorage.setItem("frimousse/data/en", "{}");
-    sessionStorage.setItem(SESSION_METADATA_KEY, "{}");
+    const localDataKey = `frimousse/data/${EMOJIBASE_URL}/en`;
+    localStorage.setItem(localDataKey, "{}");
+    sessionStorage.setItem(SESSION_METADATA_KEY(EMOJIBASE_URL), "{}");
 
     await defaultEmojiDataResolver("en", {});
 
-    const localStorageData = localStorage.getItem("frimousse/data/en");
-    const sessionStorageData = sessionStorage.getItem(SESSION_METADATA_KEY);
+    const localStorageData = localStorage.getItem(localDataKey);
+    const sessionStorageData = sessionStorage.getItem(
+      SESSION_METADATA_KEY(EMOJIBASE_URL),
+    );
 
     expect(localStorageData).not.toBe("{}");
     expect(sessionStorageData).not.toBe("{}");

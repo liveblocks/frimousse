@@ -52,7 +52,8 @@ const EMOJIBASE_LOCALES = [
 ] satisfies EmojibaseLocale[];
 const EMOJIBASE_DEFAULT_LOCALE: EmojibaseLocale = "en";
 
-export const SESSION_METADATA_KEY = "frimousse/metadata";
+export const SESSION_METADATA_KEY = (baseUrl: string) =>
+  `frimousse/metadata/${baseUrl}`;
 
 // Keep the list in sync with Emojibase's supported locales
 {
@@ -81,7 +82,11 @@ type SessionMetadata = EmojiSupport & {
   revalidated: string[];
 };
 
-const emojibaseCache = createEmojiDataCache<EmojibaseMetadata>();
+function createEmojibaseCache(baseUrl: string) {
+  return createEmojiDataCache<EmojibaseMetadata>({
+    name: `frimousse/data/${baseUrl}`,
+  });
+}
 
 async function fetchEtag(url: string, signal?: AbortSignal) {
   try {
@@ -220,15 +225,15 @@ async function fetchEmojiData(
     skinTones,
   };
 
-  emojibaseCache.set(locale, emojiData, { emojisEtag, messagesEtag });
+  createEmojibaseCache(baseUrl).set(locale, emojiData, {
+    emojisEtag,
+    messagesEtag,
+  });
 
   return emojiData;
 }
 
-function getEmojiSupport(
-  emojis: EmojiDataEmoji[],
-  emojiVersion?: number,
-): EmojiSupport {
+function getEmojiSupport(emojis: EmojiDataEmoji[]): EmojiSupport {
   const versionEmojis = new Map<number, string>();
 
   for (const emoji of emojis) {
@@ -241,13 +246,6 @@ function getEmojiSupport(
   const highestVersion = descendingVersions[0] ?? 0;
 
   const supportsCountryFlags = isEmojiSupported("🇪🇺");
-
-  if (typeof emojiVersion === "number") {
-    return {
-      emojiVersion,
-      countryFlags: supportsCountryFlags,
-    };
-  }
 
   for (const version of descendingVersions) {
     const emoji = versionEmojis.get(version)!;
@@ -287,10 +285,10 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
       : `https://cdn.jsdelivr.net/npm/emojibase-data@${typeof emojiVersion === "number" ? Math.floor(emojiVersion) : "latest"}`;
   const sessionMetadata = getStorage<SessionMetadata>(
     sessionStorage,
-    SESSION_METADATA_KEY,
+    SESSION_METADATA_KEY(baseUrl),
     validateSessionMetadata,
   );
-  const cached = emojibaseCache.get(emojibaseLocale);
+  const cached = createEmojibaseCache(baseUrl).get(emojibaseLocale);
 
   let data: EmojiData;
 
@@ -323,11 +321,10 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
   }
 
   // Cache browser support and mark this locale as revalidated
-  const support: EmojiSupport =
-    sessionMetadata ?? getEmojiSupport(data.emojis, emojiVersion);
+  const support: EmojiSupport = sessionMetadata ?? getEmojiSupport(data.emojis);
   const revalidated = sessionMetadata?.revalidated ?? [];
 
-  setStorage(sessionStorage, SESSION_METADATA_KEY, {
+  setStorage(sessionStorage, SESSION_METADATA_KEY(baseUrl), {
     ...support,
     revalidated: revalidated.includes(emojibaseLocale)
       ? revalidated
@@ -336,7 +333,8 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
 
   // Filter out unsupported emojis
   const filteredEmojis = data.emojis.filter((emoji) => {
-    const isSupportedVersion = emoji.version <= support.emojiVersion;
+    const isSupportedVersion =
+      emoji.version <= (emojiVersion ?? support.emojiVersion);
 
     return emoji.countryFlag
       ? isSupportedVersion && support.countryFlags
