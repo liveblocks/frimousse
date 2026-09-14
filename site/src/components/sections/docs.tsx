@@ -2,7 +2,6 @@ import { CircleHelp } from "lucide-react";
 import type { ComponentProps } from "react";
 import { ColorfulButtonsAlternate } from "@/examples/colorful-buttons/colorful-buttons-alternate";
 import { ColorfulButtonsBlur } from "@/examples/colorful-buttons/colorful-buttons-blur";
-import { CustomEmojiData } from "@/examples/custom-emoji-data/custom-emoji-data";
 import { ShadcnUi } from "@/examples/shadcnui/shadcnui";
 import { ShadcnUiPopover } from "@/examples/shadcnui/shadcnui-popover";
 import { Usage } from "@/examples/usage/usage";
@@ -153,78 +152,60 @@ export function Docs({
       <ShadcnUiPopover />
 
       <PermalinkHeading as="h3">
-        Custom emoji data &amp; locales
+        Custom data sources and locales
       </PermalinkHeading>
       <p>
-        Emoji data is resolved by a function, and the{" "}
+        Use the{" "}
         <a href="#emojipicker.root-props">
           <code>resolveEmojiData</code>
         </a>{" "}
-        prop lets you replace it. Its default,{" "}
-        <code>defaultEmojiDataResolver</code>, fetches{" "}
+        prop to load emoji data from your own source or support locales{" "}
         <a href="https://emojibase.dev/" rel="noreferrer" target="_blank">
           Emojibase
         </a>{" "}
-        data from a CDN (cached in <code>localStorage</code> and{" "}
-        <code>sessionStorage</code>) for the{" "}
-        <a
-          href="https://emojibase.dev/docs/datasets/#localization"
-          rel="noreferrer"
-          target="_blank"
+        doesn’t provide. Return your data for the locales you handle and
+        delegate the rest to <code>defaultEmojiDataResolver</code>.
+      </p>
+      <CodeBlock lang="tsx">{`
+        import { defaultEmojiDataResolver, EmojiPicker } from "frimousse";
+        import { emojiData } from "./emoji-data";
+
+        <EmojiPicker.Root
+          locale="custom"
+          resolveEmojiData={(locale, options) =>
+            locale === "custom"
+              ? emojiData
+              : defaultEmojiDataResolver(locale, options)
+          }
         >
-          locales it supports
-        </a>
-        .
-      </p>
+          {/* ... */}
+        </EmojiPicker.Root>
+      `}</CodeBlock>
       <p>
-        If you already have emoji data in memory, or need a locale Emojibase
-        doesn’t provide, return it from your own resolver and delegate
-        everything else to the default one.
-      </p>
-      <CustomEmojiData />
-      <p>
-        A resolver can return data synchronously or asynchronously, and receives
-        the current locale along with{" "}
+        A resolver can return data or a promise. It receives the current locale
+        and{" "}
         <code>
           {"{"} emojiVersion, emojibaseUrl, signal {"}"}
         </code>
-        . Any string is accepted as a{" "}
-        <a href="#emojipicker.root-props">locale</a>, and it’s only validated by{" "}
-        <code>defaultEmojiDataResolver</code> (which falls back to{" "}
-        <code>en</code> for locales Emojibase doesn’t support). Data you return
-        yourself is used exactly as provided, no{" "}
-        <a href="#emojipicker.root-props">Emoji version</a> or country flag
-        filtering is applied, so pre-filter it if needed.
+        . Pass the signal to asynchronous work so it can be cancelled when the
+        picker no longer needs it.
       </p>
       <p>
-        Resolvers are called once per locale, they aren’t re-run when their
-        identity changes. If resolving is expensive, the result can be cached
-        across page loads with <code>createEmojiDataCache</code>, the same{" "}
-        <code>localStorage</code> cache <code>defaultEmojiDataResolver</code>{" "}
-        uses.
+        Any string can be used as a locale. The default resolver falls back to{" "}
+        <code>en</code> when Emojibase doesn’t support it. Frimousse uses custom
+        data as-is; filter unsupported emoji versions and country flags before
+        returning it if needed.
       </p>
-      <CodeBlock lang="tsx">{`
-        import { createEmojiDataCache, type EmojiDataResolver } from "frimousse";
-
-        const cache = createEmojiDataCache({ name: "my-app/emoji-data" });
-
-        const resolveEmojiData: EmojiDataResolver = async (locale, options) => {
-          const cached = cache.get(locale);
-
-          if (cached) {
-            return cached.data;
-          }
-
-          const data = await fetchMyEmojiData(locale, options);
-
-          cache.set(locale, data);
-
-          return data;
-        };
-      `}</CodeBlock>
       <p>
-        The data must describe standard Unicode emojis rendered as text, custom
-        image or sprite-based emojis aren’t supported.
+        The resolver runs on mount and when <code>locale</code>,{" "}
+        <code>emojiVersion</code>, or <code>emojibaseUrl</code> changes. Replacing
+        the resolver function alone doesn’t reload the data. The default
+        resolver caches its data locally; use <code>createEmojiDataCache</code>{" "}
+        to persist data from your own source.
+      </p>
+      <p>
+        Data must describe standard Unicode emojis rendered as text. Image and
+        sprite-based emojis aren’t supported.
       </p>
 
       <PermalinkHeading as="h2">Styling</PermalinkHeading>
@@ -474,8 +455,8 @@ export function Docs({
               Emojibase
             </a>{" "}
             data from a CDN. Learn more in the{" "}
-            <a href="#custom-emoji-data-and-locales">
-              custom emoji data &amp; locales
+            <a href="#custom-data-sources-and-locales">
+              custom data sources and locales
             </a>{" "}
             section.
           </p>
