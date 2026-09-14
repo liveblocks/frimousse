@@ -3,7 +3,6 @@ import type { EmojiData } from "../../types";
 import { createEmojiDataCache } from "../emoji-data-cache";
 
 const EMOJI_DATA: EmojiData = {
-  // A non-Emojibase locale, to prove custom locales pass through untouched.
   locale: "tr",
   emojis: [
     {
@@ -12,8 +11,6 @@ const EMOJI_DATA: EmojiData = {
       label: "sırıtan yüz",
       version: 15,
       tags: ["yüz", "gülümseme"],
-      countryFlag: undefined,
-      skins: undefined,
     },
   ],
   categories: [{ index: 0, label: "Yüz ifadeleri" }],

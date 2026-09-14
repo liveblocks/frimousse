@@ -70,22 +70,11 @@ type EmojibaseMetadata = {
 };
 
 type EmojiSupport = {
-  /**
-   * The highest Emoji version the current browser can render.
-   */
   emojiVersion: number;
-
-  /**
-   * Whether the current browser can render country flags.
-   */
   countryFlags: boolean;
 };
 
 type SessionMetadata = EmojiSupport & {
-  /**
-   * The locales whose cached data was already revalidated during this session,
-   * to only check ETags once per locale per session.
-   */
   revalidated: string[];
 };
 
@@ -281,23 +270,8 @@ const validateSessionMetadata = $.object<SessionMetadata>({
 });
 
 /**
- * The {@link EmojiDataResolver} used by default, which fetches, transforms, and
- * caches {@link https://emojibase.dev/docs/datasets/ | Emojibase data}, and
- * filters out emojis the current browser can't render.
- *
- * Use it to delegate the locales a custom resolver doesn't handle itself.
- *
- * @example
- * ```tsx
- * import { defaultEmojiDataResolver, EmojiPicker } from "frimousse";
- *
- * <EmojiPicker.Root
- *   locale="tr"
- *   resolveEmojiData={(locale, options) =>
- *     locale === "tr" ? turkishEmojiData : defaultEmojiDataResolver(locale, options)
- *   }
- * >
- * ```
+ * Fetches and caches Emojibase data, filtering out unsupported emojis.
+ * Use it for locales a custom resolver doesn't handle.
  */
 export const defaultEmojiDataResolver: EmojiDataResolver = async (
   locale,
@@ -321,9 +295,7 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
     // No cached data
     data = await fetchEmojiData(baseUrl, emojibaseLocale, signal);
   } else if (sessionMetadata?.revalidated.includes(emojibaseLocale)) {
-    // ETags are used to check if the cached data is up-to-date but only once
-    // per locale per session, so if this locale was already revalidated during
-    // this session, the cached data can be used
+    // Check ETags only once per locale per session
     data = cached.data;
   } else {
     // Check ETags to see if the cached data is up-to-date,
@@ -347,8 +319,7 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
     }
   }
 
-  // Detect the browser's Emoji support if needed, and mark this locale as
-  // revalidated for the rest of the session
+  // Cache browser support and mark this locale as revalidated
   const support: EmojiSupport =
     sessionMetadata ?? getEmojiSupport(data.emojis, emojiVersion);
   const revalidated = sessionMetadata?.revalidated ?? [];

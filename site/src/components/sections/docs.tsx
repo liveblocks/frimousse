@@ -200,8 +200,9 @@ export function Docs({
         The resolver runs on mount and when <code>locale</code>,{" "}
         <code>emojiVersion</code>, or <code>emojibaseUrl</code> changes. Replacing
         the resolver function alone doesn’t reload the data. The default
-        resolver caches its data locally; use <code>createEmojiDataCache</code>{" "}
-        to persist data from your own source.
+        resolver caches its data locally. To persist custom data, use{" "}
+        <code>{'createEmojiDataCache({ name: "my-app/emoji-data" })'}</code> with
+        your own cache name.
       </p>
       <p>
         Data must describe standard Unicode emojis rendered as text. Image and

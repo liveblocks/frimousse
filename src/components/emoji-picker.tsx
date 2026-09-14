@@ -77,17 +77,17 @@ function EmojiPickerDataHandler({
   const columns = useSelectorKey(store, "columns");
   const skinTone = useSelectorKey(store, "skinTone");
   const search = useSelectorKey(store, "search");
-  // The resolver is made stable so that inline functions don't re-resolve the
-  // data on every render.
+  // Inline resolvers shouldn't reload data on every render.
   const stableResolveEmojiData = useStableCallback(resolveEmojiData);
 
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
 
-    Promise.resolve(
-      stableResolveEmojiData(locale, { emojiVersion, emojibaseUrl, signal }),
-    )
+    Promise.resolve()
+      .then(() =>
+        stableResolveEmojiData(locale, { emojiVersion, emojibaseUrl, signal }),
+      )
       .then((data) => {
         if (!signal.aborted) {
           setEmojiData(data);
@@ -102,7 +102,6 @@ function EmojiPickerDataHandler({
     return () => {
       controller.abort();
     };
-    // `stableResolveEmojiData` is stable, it's only listed to satisfy linters.
   }, [emojiVersion, emojibaseUrl, locale, stableResolveEmojiData]);
 
   useEffect(() => {
@@ -168,9 +167,6 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
     forwardedRef,
   ) => {
     const stableOnEmojiSelect = useStableCallback(onEmojiSelect);
-    // The locale is passed through as-is to support custom locales (including
-    // ones not supported by Emojibase). Validating it is up to the resolver,
-    // see `defaultEmojiDataResolver`.
     const store = useCreateStore(() =>
       createEmojiPickerStore(
         stableOnEmojiSelect,

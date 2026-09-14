@@ -4,7 +4,7 @@ import * as $ from "../utils/validate";
 
 const DEFAULT_CACHE_NAME = "frimousse/data";
 
-export const validateEmojiData = $.object<EmojiData>({
+const validateEmojiData = $.object<EmojiData>({
   locale: $.string,
   emojis: $.naiveArray(
     $.object({
@@ -42,8 +42,8 @@ export const validateEmojiData = $.object<EmojiData>({
 
 export type CreateEmojiDataCacheOptions = {
   /**
-   * The prefix used for the cache's `localStorage` keys, which are of the form
-   * `${name}/${locale}`.
+   * The prefix for `localStorage` keys: `${name}/${locale}`.
+   * Use a custom name to keep your data separate from the default resolver's.
    *
    * @default "frimousse/data"
    */
@@ -51,35 +51,9 @@ export type CreateEmojiDataCacheOptions = {
 };
 
 /**
- * Creates a `localStorage`-backed cache of {@link EmojiData} entries, keyed by
- * locale. This is the cache used internally by `defaultEmojiDataResolver`, and
- * it can be used to persist the data resolved by a custom
- * {@link EmojiDataResolver} across page loads.
- *
- * Each entry can carry a piece of metadata of your choosing (a version, a
- * timestamp, an ETag…), used to decide whether the cached data is still fresh.
- *
- * Creating a cache doesn't touch `localStorage`, so it's safe to do at the top
- * level of a module, including when server-side rendering.
- *
- * @example
- * ```ts
- * const cache = createEmojiDataCache<{ version: number }>({ name: "my-app/emoji-data" });
- *
- * async function resolveEmojiData(locale, options) {
- *   const cached = cache.get(locale);
- *
- *   if (cached && cached.metadata.version === VERSION) {
- *     return cached.data;
- *   }
- *
- *   const data = await fetchMyEmojiData(locale, options);
- *
- *   cache.set(locale, data, { version: VERSION });
- *
- *   return data;
- * }
- * ```
+ * Caches emoji data and optional metadata in `localStorage`, keyed by locale.
+ * Safe to create at module scope; storage is only accessed when used.
+ * Storage failures are ignored, and metadata is read without validation.
  */
 export function createEmojiDataCache<M = undefined>({
   name = DEFAULT_CACHE_NAME,
@@ -96,7 +70,6 @@ export function createEmojiDataCache<M = undefined>({
       try {
         return getStorage(localStorage, `${prefix}${locale}`, validateEntry);
       } catch {
-        // See below
         return null;
       }
     },
@@ -104,19 +77,13 @@ export function createEmojiDataCache<M = undefined>({
     set(locale, data, ...[metadata]) {
       try {
         setStorage(localStorage, `${prefix}${locale}`, { data, metadata });
-      } catch {
-        // Caching is best-effort: it can fail if `localStorage` is unavailable
-        // (e.g. when server-side rendering) or full, in which case the data is
-        // simply not cached.
-      }
+      } catch {}
     },
 
     delete(locale) {
       try {
         localStorage.removeItem(`${prefix}${locale}`);
-      } catch {
-        // See above
-      }
+      } catch {}
     },
 
     clear() {
@@ -126,9 +93,7 @@ export function createEmojiDataCache<M = undefined>({
             localStorage.removeItem(key);
           }
         }
-      } catch {
-        // See above
-      }
+      } catch {}
     },
   };
 }

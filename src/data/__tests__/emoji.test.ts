@@ -109,7 +109,6 @@ describe("defaultEmojiDataResolver", () => {
   });
 
   it("should revalidate each locale separately", async () => {
-    // Cache both locales, then start from a fresh session.
     await defaultEmojiDataResolver("en", {});
     await defaultEmojiDataResolver("fr", {});
 
@@ -119,7 +118,6 @@ describe("defaultEmojiDataResolver", () => {
 
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    // Revalidating "en" shouldn't mark "fr" as revalidated too.
     await defaultEmojiDataResolver("fr", {});
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);

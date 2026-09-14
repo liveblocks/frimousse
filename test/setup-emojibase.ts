@@ -20,10 +20,7 @@ function hash(value: string) {
   return hash.toString(16);
 }
 
-/**
- * Rejects as soon as `signal` is aborted, otherwise resolves with `promise`.
- * `fetch` is mocked so it wouldn't handle abort signals on its own.
- */
+// Mocked fetch requests must still support aborting.
 function abortable<T>(promise: Promise<T>, signal?: AbortSignal | null) {
   if (!signal) {
     return promise;
@@ -46,11 +43,11 @@ function abortable<T>(promise: Promise<T>, signal?: AbortSignal | null) {
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? "GET";
 
-      return await abortable(
+      return abortable(
         (async () => {
           const [, locale, file] = url.match(EMOJIBASE_URL_REGEX) ?? [];
           const dataset = DATASETS[`${locale}/${file}`];

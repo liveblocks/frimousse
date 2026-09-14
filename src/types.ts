@@ -62,55 +62,31 @@ export type EmojiData = {
   skinTones: Record<Exclude<SkinTone, "none">, string>;
 };
 
-/**
- * The options passed to an {@link EmojiDataResolver}.
- */
 export type EmojiDataResolverOptions = {
-  /**
-   * The {@link https://emojipedia.org/emoji-versions | Emoji version} requested
-   * via the {@link EmojiPickerRootProps.emojiVersion | `emojiVersion`} prop, if any.
-   */
   emojiVersion?: number;
-
-  /**
-   * The base URL requested via the {@link EmojiPickerRootProps.emojibaseUrl | `emojibaseUrl`}
-   * prop, if any.
-   */
   emojibaseUrl?: string;
-
   /**
-   * An {@link https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal | `AbortSignal`}
-   * which is aborted when the emoji picker unmounts or when the resolver is
-   * called again (e.g. because the locale changed). Resolvers performing
-   * asynchronous work should forward this signal and/or reject when it aborts.
+   * Aborted when the picker unmounts or its data needs to be loaded again.
    */
   signal?: AbortSignal;
 };
 
-/**
- * A function which returns {@link EmojiData} for a given locale, either
- * synchronously or asynchronously.
- */
 export type EmojiDataResolver = (
   locale: string,
   options: EmojiDataResolverOptions,
 ) => EmojiData | Promise<EmojiData>;
 
 /**
- * A persistent store of {@link EmojiData} entries, keyed by locale, with an
- * optional piece of metadata of your choosing attached to each entry.
- *
- * Created via `createEmojiDataCache`.
+ * A persistent cache of emoji data, created by `createEmojiDataCache`.
  */
 export type EmojiDataCache<M = undefined> = {
   /**
-   * Returns the entry cached for a locale, or `null` if there is none or if the
-   * cached {@link EmojiData} is malformed.
+   * Returns a cached entry, or `null` if missing or invalid.
    */
   get: (locale: string) => { data: EmojiData; metadata: M } | null;
 
   /**
-   * Caches {@link EmojiData} for a locale, along with its metadata.
+   * Stores data and optional metadata for a locale.
    */
   set: (
     locale: string,
@@ -119,12 +95,12 @@ export type EmojiDataCache<M = undefined> = {
   ) => void;
 
   /**
-   * Removes the entry cached for a locale, if any.
+   * Removes the entry for a locale.
    */
   delete: (locale: string) => void;
 
   /**
-   * Removes all entries of this cache.
+   * Removes all entries in this cache's namespace.
    */
   clear: () => void;
 };
@@ -218,41 +194,19 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
   /**
    * The locale of the emoji picker.
    *
-   * Built-in Emojibase locales are suggested for autocompletion, but any string
-   * is accepted to support custom locales provided via {@link EmojiPickerRootProps.resolveEmojiData}.
+   * Custom locales can be used with `resolveEmojiData`.
    *
    * @default "en"
    */
   locale?: Locale | (string & {});
 
   /**
-   * How {@link EmojiData} is obtained for the current {@link EmojiPickerRootProps.locale | `locale`},
-   * either synchronously or asynchronously.
+   * Returns emoji data for the current locale, synchronously or asynchronously.
+   * Custom data is used as-is, without version or country-flag filtering.
+   * Delegate to `defaultEmojiDataResolver` to use Emojibase data.
    *
-   * By default, `defaultEmojiDataResolver` is used: it fetches, transforms, and
-   * caches {@link https://emojibase.dev/docs/datasets/ | Emojibase data}, and
-   * filters out emojis the current browser can't render.
-   *
-   * To support locales Emojibase doesn't cover, or to supply your own datasets,
-   * provide a resolver which handles the locales you care about and delegates
-   * the rest to `defaultEmojiDataResolver`. Data you return yourself is used
-   * as-is: no network requests and no Emoji version or country-flag filtering.
-   * Caching it is up to you—see `createEmojiDataCache`.
-   *
-   * The data must describe standard Unicode emoji rendered as text; image/sprite
-   * emoji are not supported.
-   *
-   * @example
-   * ```tsx
-   * import { defaultEmojiDataResolver, EmojiPicker } from "frimousse";
-   *
-   * <EmojiPicker.Root
-   *   locale="tr"
-   *   resolveEmojiData={(locale, options) =>
-   *     locale === "tr" ? turkishEmojiData : defaultEmojiDataResolver(locale, options)
-   *   }
-   * >
-   * ```
+   * Runs on mount and when `locale`, `emojiVersion`, or `emojibaseUrl` changes.
+   * Changing the function alone doesn't reload data.
    *
    * @default defaultEmojiDataResolver
    */
