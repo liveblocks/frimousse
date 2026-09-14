@@ -19,6 +19,7 @@ export type WithAttributes<T> = T & {
 
 export type {
   Emoji as EmojibaseEmoji,
+  Locale as EmojibaseLocale,
   MessagesDataset as EmojibaseMessagesDataset,
   SkinTone as EmojibaseSkinTone,
 } from "emojibase/lib/types";
@@ -27,7 +28,7 @@ export type EmojibaseEmojiWithGroup = EmojibaseEmoji & {
   group: EmojibaseGroup;
 };
 
-export type Locale = Resolve<EmojibaseLocale>;
+export type Locale = Resolve<EmojibaseLocale> | (string & {});
 
 export type SkinTone = Resolve<"none" | EmojibaseSkinToneKey>;
 
@@ -56,7 +57,7 @@ export type EmojiDataCategory = {
 };
 
 export type EmojiData = {
-  locale: Locale | (string & {});
+  locale: Locale;
   emojis: EmojiDataEmoji[];
   categories: EmojiDataCategory[];
   skinTones: Record<Exclude<SkinTone, "none">, string>;
@@ -72,7 +73,7 @@ export type EmojiDataResolverOptions = {
 };
 
 export type EmojiDataResolver = (
-  locale: string,
+  locale: Locale,
   options: EmojiDataResolverOptions,
 ) => EmojiData | Promise<EmojiData>;
 
@@ -83,13 +84,13 @@ export type EmojiDataCache<M = undefined> = {
   /**
    * Returns a cached entry, or `null` if missing or invalid.
    */
-  get: (locale: string) => { data: EmojiData; metadata: M } | null;
+  get: (locale: Locale) => { data: EmojiData; metadata: M } | null;
 
   /**
    * Stores data and optional metadata for a locale.
    */
   set: (
-    locale: string,
+    locale: Locale,
     data: EmojiData,
     ...metadata: undefined extends M ? [metadata?: M] : [metadata: M]
   ) => void;
@@ -97,7 +98,7 @@ export type EmojiDataCache<M = undefined> = {
   /**
    * Removes the entry for a locale.
    */
-  delete: (locale: string) => void;
+  delete: (locale: Locale) => void;
 
   /**
    * Removes all entries in this cache's namespace.
@@ -198,7 +199,7 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
    *
    * @default "en"
    */
-  locale?: Locale | (string & {});
+  locale?: Locale;
 
   /**
    * Returns emoji data for the current locale, synchronously or asynchronously.

@@ -60,7 +60,7 @@ describe("defaultEmojiDataResolver", () => {
 
   it("should fall back to the default locale when the locale isn't supported by Emojibase", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const data = await defaultEmojiDataResolver("tr", {});
+    const data = await defaultEmojiDataResolver("unsupported", {});
 
     expect(data.locale).toBe("en");
     expect(warnSpy).toHaveBeenCalled();

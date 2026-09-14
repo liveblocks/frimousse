@@ -2,11 +2,11 @@ import { SKIN_TONES } from "../constants";
 import type {
   EmojibaseEmoji,
   EmojibaseEmojiWithGroup,
+  EmojibaseLocale,
   EmojibaseMessagesDataset,
   EmojiData,
   EmojiDataEmoji,
   EmojiDataResolver,
-  Locale,
   SkinTone,
 } from "../types";
 import { capitalize } from "../utils/capitalize";
@@ -15,9 +15,9 @@ import { getStorage, setStorage } from "../utils/storage";
 import * as $ from "../utils/validate";
 import { createEmojiDataCache } from "./emoji-data-cache";
 
-const EMOJIBASE_EMOJIS_URL = (baseUrl: string, locale: Locale) =>
+const EMOJIBASE_EMOJIS_URL = (baseUrl: string, locale: EmojibaseLocale) =>
   `${baseUrl}/${locale}/data.json`;
-const EMOJIBASE_MESSAGES_URL = (baseUrl: string, locale: Locale) =>
+const EMOJIBASE_MESSAGES_URL = (baseUrl: string, locale: EmojibaseLocale) =>
   `${baseUrl}/${locale}/messages.json`;
 
 const EMOJIBASE_LOCALES = [
@@ -49,14 +49,17 @@ const EMOJIBASE_LOCALES = [
   "vi",
   "zh-hant",
   "zh",
-] satisfies Locale[];
-const EMOJIBASE_DEFAULT_LOCALE: Locale = "en";
+] satisfies EmojibaseLocale[];
+const EMOJIBASE_DEFAULT_LOCALE: EmojibaseLocale = "en";
 
 export const SESSION_METADATA_KEY = "frimousse/metadata";
 
-// Prevent EMOJIBASE_LOCALES to be out of sync with Locale
+// Keep the list in sync with Emojibase's supported locales
 {
-  type MissingLocales = Exclude<Locale, (typeof EMOJIBASE_LOCALES)[number]>;
+  type MissingLocales = Exclude<
+    EmojibaseLocale,
+    (typeof EMOJIBASE_LOCALES)[number]
+  >;
   type AllLocalesPresent = MissingLocales extends never
     ? true
     : `Missing locales: ${MissingLocales}`;
@@ -92,7 +95,7 @@ async function fetchEtag(url: string, signal?: AbortSignal) {
 
 async function fetchEmojibaseData(
   baseUrl: string,
-  locale: Locale,
+  locale: EmojibaseLocale,
   signal?: AbortSignal,
 ) {
   const [{ emojis, emojisEtag }, { messages, messagesEtag }] =
@@ -125,7 +128,7 @@ async function fetchEmojibaseData(
 
 async function fetchEmojibaseEtags(
   baseUrl: string,
-  locale: Locale,
+  locale: EmojibaseLocale,
   signal?: AbortSignal,
 ) {
   const [emojisEtag, messagesEtag] = await Promise.all([
@@ -164,7 +167,7 @@ export function getEmojibaseSkinToneVariations(
 
 async function fetchEmojiData(
   baseUrl: string,
-  locale: Locale,
+  locale: EmojibaseLocale,
   signal?: AbortSignal,
 ): Promise<EmojiData> {
   const { emojis, emojisEtag, messages, messagesEtag } =
@@ -348,8 +351,12 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
   };
 };
 
-export function validateLocale(locale: string): Locale {
-  if (!EMOJIBASE_LOCALES.includes(locale as Locale)) {
+export function validateLocale(locale: string): EmojibaseLocale {
+  const emojibaseLocale = EMOJIBASE_LOCALES.find(
+    (supportedLocale) => supportedLocale === locale,
+  );
+
+  if (!emojibaseLocale) {
     console.warn(
       `Locale "${locale}" is not supported, using "${EMOJIBASE_DEFAULT_LOCALE}" instead.`,
     );
@@ -357,7 +364,7 @@ export function validateLocale(locale: string): Locale {
     return EMOJIBASE_DEFAULT_LOCALE;
   }
 
-  return locale as Locale;
+  return emojibaseLocale;
 }
 
 export function validateSkinTone(skinTone: string): SkinTone {

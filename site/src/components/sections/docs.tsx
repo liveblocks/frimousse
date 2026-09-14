@@ -171,9 +171,9 @@ export function Docs({
         import { emojiData } from "./emoji-data";
 
         <EmojiPicker.Root
-          locale="custom"
+          locale="ne"
           resolveEmojiData={(locale, options) =>
-            locale === "custom"
+            locale === "ne"
               ? emojiData
               : defaultEmojiDataResolver(locale, options)
           }
@@ -353,15 +353,11 @@ export function Docs({
         <PropertiesListRow name="onEmojiSelect" type="(emoji: Emoji) => void">
           <p>A callback invoked when an emoji is selected.</p>
         </PropertiesListRow>
-        <PropertiesListRow
-          defaultValue={`"en"`}
-          name="locale"
-          type="Locale | (string & {})"
-        >
+        <PropertiesListRow defaultValue={`"en"`} name="locale" type="Locale">
           <p>The locale of the emoji picker.</p>
           <p>
-            Any string is accepted, locales outside of the built-in{" "}
-            <code>Locale</code> list can be used with a custom{" "}
+            Any string is accepted. Locales not supported by Emojibase can be
+            used with a custom{" "}
             <a href="#emojipicker.root-props">
               <code>resolveEmojiData</code>
             </a>

@@ -12,7 +12,6 @@ import type {
   EmojiPickerListProps,
   EmojiPickerRootProps,
   EmojiPickerSearchProps,
-  Locale,
   SkinTone,
 } from "../../types";
 import * as EmojiPicker from "../emoji-picker";
@@ -320,7 +319,7 @@ describe("EmojiPicker", () => {
   it("should fallback to default values for unsupported locales and skin tones", async () => {
     page.render(
       <DefaultPage
-        locale={"unsupported" as Locale}
+        locale="unsupported"
         skinTone={"unsupported" as SkinTone}
       />,
     );
@@ -917,8 +916,8 @@ describe("EmojiPicker.SkinTone", () => {
 
 describe("EmojiPicker with a custom emoji data resolver", () => {
   const CUSTOM_EMOJI_DATA: EmojiData = {
-    locale: "tr",
-    categories: [{ index: 0, label: "Yüz ifadeleri" }],
+    locale: "ne",
+    categories: [{ index: 0, label: "अनुहारहरू" }],
     skinTones: {
       light: "🏻",
       "medium-light": "🏼",
@@ -930,23 +929,23 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
       {
         emoji: "😀",
         category: 0,
-        label: "sırıtan yüz",
+        label: "हाँसेको अनुहार",
         version: 1,
-        tags: ["gülümseme", "mutlu"],
+        tags: ["हाँसो", "खुसी"],
       },
       {
         emoji: "😍",
         category: 0,
-        label: "kalp gözlü yüz",
+        label: "मुटु आकारका आँखा भएको अनुहार",
         version: 1,
-        tags: ["aşk", "kalp"],
+        tags: ["माया", "मुटु"],
       },
       {
-        emoji: "🇹🇷",
+        emoji: "🇳🇵",
         category: 0,
-        label: "Türkiye bayrağı",
+        label: "नेपालको झण्डा",
         version: 1,
-        tags: ["bayrak"],
+        tags: ["झण्डा"],
         countryFlag: true,
       },
     ],
@@ -954,28 +953,31 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
 
   const resolveCustomEmojiData = () => CUSTOM_EMOJI_DATA;
 
-  it("should render custom data for a non-Emojibase locale without fetching", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
+  it.each(["ne", "ne-custom"])(
+    "should render custom data for locale %s without fetching",
+    async (locale) => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    page.render(
-      <DefaultPage locale="tr" resolveEmojiData={resolveCustomEmojiData} />,
-    );
+      page.render(
+        <DefaultPage locale={locale} resolveEmojiData={resolveCustomEmojiData} />,
+      );
 
-    await expect.element(page.getByText("😀")).toBeInTheDocument();
-    await expect.element(page.getByText("😍")).toBeInTheDocument();
-    await expect.element(page.getByText("🇹🇷")).toBeInTheDocument();
+      await expect.element(page.getByText("😀")).toBeInTheDocument();
+      await expect.element(page.getByText("😍")).toBeInTheDocument();
+      await expect.element(page.getByText("🇳🇵")).toBeInTheDocument();
 
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
 
   it("should search custom data using custom labels and tags", async () => {
     page.render(
-      <DefaultPage locale="tr" resolveEmojiData={resolveCustomEmojiData} />,
+      <DefaultPage locale="ne" resolveEmojiData={resolveCustomEmojiData} />,
     );
 
     await expect.element(page.getByText("😀")).toBeInTheDocument();
 
-    await page.getByTestId("search").fill("aşk");
+    await page.getByTestId("search").fill("माया");
 
     await expect.element(page.getByText("😍")).toBeInTheDocument();
     await expect.element(page.getByText("😀")).not.toBeInTheDocument();
@@ -983,14 +985,14 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
 
   it("should support selecting a custom emoji", async () => {
     page.render(
-      <DefaultPage locale="tr" resolveEmojiData={resolveCustomEmojiData} />,
+      <DefaultPage locale="ne" resolveEmojiData={resolveCustomEmojiData} />,
     );
 
-    await page.getByText("🇹🇷").click();
+    await page.getByText("🇳🇵").click();
 
     await expect
       .element(page.getByTestId("selected-emoji"))
-      .toHaveTextContent("🇹🇷");
+      .toHaveTextContent("🇳🇵");
   });
 
   it("should delegate unhandled locales to the default resolver", async () => {
@@ -998,7 +1000,7 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
       <DefaultPage
         locale="en"
         resolveEmojiData={(locale, options) =>
-          locale === "tr"
+          locale === "ne"
             ? CUSTOM_EMOJI_DATA
             : defaultEmojiDataResolver(locale, options)
         }
@@ -1011,7 +1013,7 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
       )
       .toBeInTheDocument();
     await expect
-      .element(page.getByRole("gridcell", { name: "sırıtan yüz" }))
+      .element(page.getByRole("gridcell", { name: "हाँसेको अनुहार" }))
       .not.toBeInTheDocument();
   });
 
@@ -1022,7 +1024,7 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
       const [count, setCount] = useState(0);
 
       return (
-        <DefaultPage locale="tr" resolveEmojiData={(...args) => resolve(...args)}>
+        <DefaultPage locale="ne" resolveEmojiData={(...args) => resolve(...args)}>
           <button onClick={() => setCount(count + 1)} type="button">
             Rerender {count}
           </button>
