@@ -213,6 +213,10 @@ async function fetchEmojiData(
   );
 
   const formattedEmojis = filteredEmojis.map((emoji) => {
+    const aliases = emoji.skins
+      ?.filter((skin) => Array.isArray(skin.tone))
+      .map((skin) => skin.emoji);
+
     return {
       emoji: emoji.emoji,
       category: emoji.group,
@@ -224,6 +228,7 @@ async function fetchEmojiData(
           emoji.subgroup === countryFlagsSubgroup.order) ||
         undefined,
       skins: getEmojibaseSkinToneVariations(emoji),
+      aliases: aliases?.length ? aliases : undefined,
     } satisfies EmojiDataEmoji;
   });
 

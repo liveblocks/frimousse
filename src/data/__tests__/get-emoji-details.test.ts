@@ -71,6 +71,31 @@ describe("getEmojiDetails", () => {
     });
   });
 
+  it.each([
+    ["🫱🏽‍🫲🏻", "🤝"],
+    ["👩🏽‍❤️‍👨🏻", "👩‍❤️‍👨"],
+    ["👩🏽‍❤️‍💋‍👨🏻", "👩‍❤️‍💋‍👨"],
+    ["🧑🏽‍🤝‍🧑🏻", "🧑‍🤝‍🧑"],
+  ])("should match mixed skin tones in %s to %s", async (emoji, base) => {
+    const details = await getEmojiDetails(base);
+
+    expect(details).toBeDefined();
+    expect(await getEmojiDetails(emoji)).toBe(details);
+  });
+
+  it("should look up mixed skin tones from persisted picker data", async () => {
+    await defaultEmojiDataResolver("en", {});
+    vi.resetModules();
+    ({ getEmojiDetails } = await import("../get-emoji-details"));
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    expect(await getEmojiDetails("🫱🏽‍🫲🏻")).toMatchObject({
+      emoji: "🤝",
+      label: "Handshake",
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("should keep locales and data sources separate", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const [english, french, otherSource] = await Promise.all([

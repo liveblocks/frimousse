@@ -51,6 +51,7 @@ export type EmojiDataEmoji = {
   tags: string[];
   countryFlag?: true | undefined;
   skins?: Record<Exclude<SkinTone, "none">, string> | undefined;
+  aliases?: string[];
 };
 
 export type EmojiDataCategory = {

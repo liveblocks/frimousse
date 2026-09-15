@@ -13,6 +13,7 @@ const validateEmojiData = $.object<EmojiData>({
       label: $.string,
       version: $.number,
       tags: $.naiveArray($.string),
+      aliases: $.optional($.naiveArray($.string)),
       countryFlag: $.optional($.boolean as $.Validator<true>),
       skins: $.optional(
         $.object({

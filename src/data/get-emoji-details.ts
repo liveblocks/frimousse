@@ -47,12 +47,11 @@ export async function getEmojiDetails(
     for (const emoji of data.emojis) {
       index.set(getKey(emoji.emoji), emoji);
 
-      if (!emoji.skins) {
-        continue;
-      }
-
-      for (const skin of Object.values(emoji.skins)) {
-        const key = getKey(skin);
+      for (const alias of [
+        ...Object.values(emoji.skins ?? {}),
+        ...(emoji.aliases ?? []),
+      ]) {
+        const key = getKey(alias);
 
         if (!index.has(key)) {
           index.set(key, emoji);
