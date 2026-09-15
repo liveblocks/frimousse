@@ -238,4 +238,47 @@ describe("defaultEmojiDataResolver", () => {
     expect(localStorageData).not.toBe("{}");
     expect(sessionStorageData).not.toBe("{}");
   });
+
+  it.each([
+    undefined,
+    null,
+  ])("should refresh cached data with %s metadata and repair its ETags", async (metadata) => {
+    const original = await defaultEmojiDataResolver("en", {});
+    localStorage.setItem(
+      `frimousse/data/${EMOJIBASE_URL}/en`,
+      JSON.stringify({ data: { ...original, emojis: [] }, metadata }),
+    );
+    sessionStorage.clear();
+
+    await reload();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const refreshed = await defaultEmojiDataResolver("en", {});
+
+    expect(refreshed.emojis).toHaveLength(original.emojis.length);
+    expect(
+      fetchSpy.mock.calls
+        .filter(([, options]) => options?.method !== "HEAD")
+        .map(([url]) => url),
+    ).toEqual([
+      `${EMOJIBASE_URL}/en/data.json`,
+      `${EMOJIBASE_URL}/en/messages.json`,
+    ]);
+    expect(cache.get("en")?.metadata).toEqual({
+      emojisEtag: expect.any(String),
+      messagesEtag: expect.any(String),
+    });
+
+    sessionStorage.clear();
+    await reload();
+    fetchSpy.mockClear();
+
+    const cached = await defaultEmojiDataResolver("en", {});
+
+    expect(cached.emojis).toHaveLength(original.emojis.length);
+    expect(fetchSpy.mock.calls.map(([, options]) => options?.method)).toEqual([
+      "HEAD",
+      "HEAD",
+    ]);
+  });
 });

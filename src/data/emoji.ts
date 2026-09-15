@@ -387,8 +387,8 @@ async function readEmojiData(
       data =
         !emojisEtag ||
         !messagesEtag ||
-        emojisEtag !== cached.metadata.emojisEtag ||
-        messagesEtag !== cached.metadata.messagesEtag
+        emojisEtag !== cached.metadata?.emojisEtag ||
+        messagesEtag !== cached.metadata?.messagesEtag
           ? await fetchEmojiData(baseUrl, locale, signal)
           : cached.data;
     } catch {
