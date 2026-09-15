@@ -2,8 +2,8 @@
 
 - Add `resolveEmojiData` prop on `EmojiPicker.Root` and export `defaultEmojiDataResolver` to support custom data sources and locales.
 - Add `createEmojiDataCache` to persist custom emoji data in `localStorage`.
-- Add `getEmojiDetails` and `EmojiDetails` to look up localized labels and tags, sharing cached data and pending requests with the picker.
-- Fix `sessionStorage` revalidation being skipped for every locale after the first one was fetched.
+- Add `getEmojiDetails` and `EmojiDetails` to look up localized labels and tags.
+- Fix cached emoji data only being checked for updates for the first locale used.
 - Fix cached data ignoring changes to `emojibaseUrl` and `emojiVersion`.
 
 ## [0.3.0] - 2025-07-15

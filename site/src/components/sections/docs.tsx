@@ -164,7 +164,11 @@ export function Docs({
           Emojibase
         </a>{" "}
         doesn’t provide. Return your data for the locales you handle and
-        delegate the rest to <code>defaultEmojiDataResolver</code>.
+        delegate the rest to{" "}
+        <a href="#defaultemojidataresolver">
+          <code>defaultEmojiDataResolver</code>
+        </a>
+        .
       </p>
       <CodeBlock lang="tsx">{`
         import { defaultEmojiDataResolver, EmojiPicker } from "frimousse";
@@ -182,13 +186,38 @@ export function Docs({
         </EmojiPicker.Root>
       `}</CodeBlock>
       <p>
-        A resolver can return data or a promise. It receives the current locale
-        and{" "}
-        <code>
-          {"{"} emojiVersion, emojibaseUrl, signal {"}"}
-        </code>
-        . Pass the signal to asynchronous work so it can be cancelled when the
-        picker no longer needs it.
+        The data should use the <code>EmojiData</code> type. For example,{" "}
+        <code>emoji-data.ts</code> could contain:
+      </p>
+      <CodeBlock lang="ts">{`
+        import type { EmojiData } from "frimousse";
+
+        export const emojiData: EmojiData = {
+          locale: "ne",
+          emojis: [
+            {
+              emoji: "😀",
+              label: "हाँसेको अनुहार",
+              tags: ["खुसी"],
+              category: 0,
+              version: 1,
+            },
+          ],
+          categories: [{ index: 0, label: "अनुहारहरू" }],
+          skinTones: {
+            light: "हल्का",
+            "medium-light": "मध्यम हल्का",
+            medium: "मध्यम",
+            "medium-dark": "मध्यम गाढा",
+            dark: "गाढा",
+          },
+        };
+      `}</CodeBlock>
+      <p>
+        Each emoji’s <code>category</code> matches a category’s{" "}
+        <code>index</code>. Category labels and <code>skinTones</code> are
+        localized names shown in the picker. Data must describe standard Unicode
+        emojis rendered as text; image and sprite-based emojis aren’t supported.
       </p>
       <p>
         Any string can be used as a locale. The default resolver falls back to{" "}
@@ -197,22 +226,22 @@ export function Docs({
         returning it if needed.
       </p>
       <p>
-        The resolver runs on mount and when <code>locale</code>,{" "}
-        <code>emojiVersion</code>, or <code>emojibaseUrl</code> changes. Replacing
-        the resolver function alone doesn’t reload the data. The default
-        resolver caches its data locally. To persist custom data, use{" "}
-        <code>{'createEmojiDataCache({ name: "my-app/emoji-data" })'}</code> with
-        your own cache name.
-      </p>
-      <p>
-        Data must describe standard Unicode emojis rendered as text. Image and
-        sprite-based emojis aren’t supported.
+        A resolver can return data or a promise. To cache custom data locally,
+        use{" "}
+        <a href="#createemojidatacache">
+          <code>createEmojiDataCache</code>
+        </a>
+        .
       </p>
 
       <PermalinkHeading as="h3">Looking up an emoji</PermalinkHeading>
       <p>
-        Use <code>getEmojiDetails</code> to get a stored emoji’s localized
-        label and search tags without mounting a picker.
+        Use{" "}
+        <a href="#getemojidetails">
+          <code>getEmojiDetails</code>
+        </a>{" "}
+        to get a stored emoji’s localized label and search tags without mounting
+        a picker.
       </p>
       <CodeBlock lang="ts">{`
         import { getEmojiDetails } from "frimousse";
@@ -220,24 +249,17 @@ export function Docs({
         const emoji = await getEmojiDetails("👍🏽", { locale: "en" });
 
         emoji?.label; // "Thumbs up"
+        emoji?.emoji; // "👍"
         emoji?.tags;
       `}</CodeBlock>
       <p>
-        Returns <code>EmojiDetails</code> or <code>undefined</code> when no match
-        exists. Skin-tone variants return their base entry, and variation
-        selectors are optional. Loading errors reject the promise.
+        Skin-tone variants return the base emoji’s details. Both <code>❤</code>{" "}
+        and <code>❤️</code> match the same emoji too. If no match exists, the
+        result is <code>undefined</code>.
       </p>
       <p>
-        The default source shares cached data and pending requests with the
-        picker, but doesn’t filter out emojis the browser can’t render. Each
-        dataset is indexed once, so repeated lookups don’t scan the emoji list.
-      </p>
-      <p>
-        Options include <code>locale</code> (defaults to <code>en</code>),{" "}
-        <code>emojibaseUrl</code>, <code>signal</code>, and{" "}
-        <code>resolveEmojiData</code>. Custom resolvers control their own
-        loading and caching; replace their <code>emojis</code> array when its
-        entries change to rebuild the lookup index.
+        By default, emoji data is shared with the picker. Lookups also include
+        emojis the browser can’t render.
       </p>
 
       <PermalinkHeading as="h2">Styling</PermalinkHeading>
@@ -350,7 +372,7 @@ export function Docs({
       <ColorfulButtonsBlur />
 
       <PermalinkHeading as="h2">API Reference</PermalinkHeading>
-      <p>All parts and hooks, along their usage and options.</p>
+      <p>All parts, hooks, and helpers, along their usage and options.</p>
 
       <PermalinkHeading as="h3">EmojiPicker.Root</PermalinkHeading>
       <p>Surrounds all the emoji picker parts.</p>
@@ -425,6 +447,10 @@ export function Docs({
             to use, to manually control which emojis are visible regardless of
             the current browser’s supported Emoji versions.
           </p>
+          <p>
+            With a custom <code>resolveEmojiData</code>, this value is passed to
+            the resolver, which is responsible for filtering the emojis.
+          </p>
         </PropertiesListRow>
         <PropertiesListRow
           defaultValue={`"https://cdn.jsdelivr.net/npm/emojibase-data"`}
@@ -470,12 +496,24 @@ export function Docs({
           type="EmojiDataResolver"
         >
           <p>
-            A function returning the emoji data for the current locale, either
-            synchronously or asynchronously. It receives the locale along with{" "}
+            A function returning <code>EmojiData</code> or a promise for the
+            current locale. It receives the locale along with{" "}
             <code>
               {"{"} emojiVersion, emojibaseUrl, signal {"}"}
             </code>
             .
+          </p>
+          <p>
+            Pass <code>signal</code> to <code>fetch</code> or other work that
+            can be cancelled. It is aborted when the picker unmounts or needs to
+            reload its data.
+          </p>
+          <p>
+            Runs on mount and when <code>locale</code>,{" "}
+            <code>emojiVersion</code>, or <code>emojibaseUrl</code> changes.
+            Changing the resolver function alone doesn’t reload the data. Custom
+            data is used as-is, without filtering unsupported emoji versions or
+            country flags.
           </p>
           <p>
             By default, <code>defaultEmojiDataResolver</code> fetches{" "}
@@ -1054,6 +1092,244 @@ export function Docs({
         </a>{" "}
         is also available.
       </p>
+
+      <PermalinkHeading as="h3">defaultEmojiDataResolver</PermalinkHeading>
+      <p>
+        Loads and caches Emojibase data, filtering out emojis the browser can’t
+        render. It is the default resolver for <code>EmojiPicker.Root</code> and
+        can be used for locales a custom resolver doesn’t handle.
+      </p>
+      <CodeBlock lang="ts">{`
+        import { defaultEmojiDataResolver } from "frimousse";
+
+        const data = await defaultEmojiDataResolver("fr", {});
+      `}</CodeBlock>
+
+      <PermalinkHeading as="h4" slugPrefix="defaultEmojiDataResolver">
+        Parameters
+      </PermalinkHeading>
+      <PropertiesList>
+        <PropertiesListRow name="locale" required type="Locale">
+          <p>
+            The locale to load. Falls back to <code>en</code> if Emojibase
+            doesn’t support it.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow name="options" required type="object">
+          <p>
+            Accepts <code>emojiVersion</code> and <code>emojibaseUrl</code> with
+            the same behavior as the{" "}
+            <a href="#emojipicker.root-props">picker props</a>, and an optional{" "}
+            <code>AbortSignal</code> as <code>signal</code> to cancel loading.
+            Pass an empty object to use the defaults.
+          </p>
+        </PropertiesListRow>
+      </PropertiesList>
+      <p>
+        Returns a promise of <code>EmojiData</code>, in the format shown in the{" "}
+        <a href="#custom-data-sources-and-locales">custom data example</a>.
+        Loading errors reject the promise.
+      </p>
+
+      <PermalinkHeading as="h3">createEmojiDataCache</PermalinkHeading>
+      <p>
+        Creates a cache for storing custom emoji data in{" "}
+        <code>localStorage</code>. Read and write entries inside your resolver
+        to reuse data across visits. Use your own cache name to keep it separate
+        from the default resolver’s data.
+      </p>
+      <CodeBlock lang="ts">{`
+        import {
+          createEmojiDataCache,
+          defaultEmojiDataResolver,
+          type EmojiData,
+          type EmojiDataResolver,
+        } from "frimousse";
+
+        const cache = createEmojiDataCache({ name: "my-app/emoji-data" });
+
+        export const resolveEmojiData: EmojiDataResolver = async (
+          locale,
+          options,
+        ) => {
+          if (locale !== "ne") {
+            return defaultEmojiDataResolver(locale, options);
+          }
+
+          const cached = cache.get(locale);
+
+          if (cached) {
+            return cached.data;
+          }
+
+          const response = await fetch("/emoji-data/ne.json", {
+            signal: options.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error("Could not load emoji data");
+          }
+
+          const data: EmojiData = await response.json();
+          cache.set(locale, data);
+          return data;
+        };
+      `}</CodeBlock>
+      <p>
+        The JSON file uses the same format as the{" "}
+        <a href="#custom-data-sources-and-locales">custom data example</a>. Pass
+        this <code>resolveEmojiData</code> function to{" "}
+        <code>EmojiPicker.Root</code>. Entries stay cached until you replace or
+        remove them; the cache doesn’t check for updates automatically.
+      </p>
+
+      <PermalinkHeading as="h4" slugPrefix="createEmojiDataCache">
+        Parameters
+      </PermalinkHeading>
+      <PropertiesList>
+        <PropertiesListRow
+          defaultValue={`"frimousse/data"`}
+          name="options.name"
+          type="string"
+        >
+          <p>The cache name. Each entry is stored under its locale.</p>
+        </PropertiesListRow>
+      </PropertiesList>
+
+      <PermalinkHeading as="h4" slugPrefix="createEmojiDataCache">
+        Methods
+      </PermalinkHeading>
+      <PropertiesList>
+        <PropertiesListRow name="get(locale)">
+          <p>
+            Returns <code>{"{ data, metadata }"}</code>, or <code>null</code> if
+            the entry is missing or invalid.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow name="set(locale, data, metadata?)">
+          <p>
+            Stores <code>EmojiData</code> and optional metadata for a locale,
+            replacing any existing entry.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow name="delete(locale)">
+          <p>Removes the entry for a locale.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="clear()">
+          <p>Removes all entries with this cache name.</p>
+        </PropertiesListRow>
+      </PropertiesList>
+      <p>
+        If browser storage is unavailable, reads return <code>null</code> and
+        writes are ignored.
+      </p>
+
+      <PermalinkHeading as="h3">getEmojiDetails</PermalinkHeading>
+      <p>Looks up an emoji’s localized label and search tags.</p>
+      <CodeBlock lang="ts">{`
+        import { getEmojiDetails } from "frimousse";
+
+        const emoji = await getEmojiDetails("👍🏽", { locale: "en" });
+
+        emoji?.label; // "Thumbs up"
+        emoji?.emoji; // "👍"
+      `}</CodeBlock>
+
+      <PermalinkHeading as="h4" slugPrefix="getEmojiDetails">
+        Parameters
+      </PermalinkHeading>
+      <PropertiesList>
+        <PropertiesListRow name="emoji" required type="string">
+          <p>
+            The emoji to look up. Skin-tone variants return the base emoji’s
+            details. Both <code>❤</code> and <code>❤️</code> match the same
+            emoji.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow
+          defaultValue={`"en"`}
+          name="options.locale"
+          type="Locale"
+        >
+          <p>
+            The locale to use. The default source falls back to <code>en</code>{" "}
+            when Emojibase doesn’t support it.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow
+          defaultValue={`"https://cdn.jsdelivr.net/npm/emojibase-data@latest"`}
+          name="options.emojibaseUrl"
+          type="string"
+        >
+          <p>
+            The base URL for Emojibase data, using the same directory structure
+            as the{" "}
+            <a href="#emojipicker.root-props">picker’s emojibaseUrl prop</a>.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow name="options.signal" type="AbortSignal">
+          <p>A signal to cancel the lookup.</p>
+        </PropertiesListRow>
+        <PropertiesListRow
+          name="options.resolveEmojiData"
+          type="EmojiDataResolver"
+        >
+          <p>
+            A custom data source. Receives the locale and an object containing{" "}
+            <code>emojibaseUrl</code> and <code>signal</code>. It is responsible
+            for loading and caching its data. When changing entries, return a
+            new <code>emojis</code> array.
+          </p>
+        </PropertiesListRow>
+      </PropertiesList>
+      <p>
+        By default, data is shared with the picker and includes emojis the
+        browser can’t render. A custom resolver determines which emojis are
+        available for lookup.
+      </p>
+
+      <PermalinkHeading as="h4" slugPrefix="getEmojiDetails">
+        Return Value
+      </PermalinkHeading>
+      <p>
+        Returns a promise of <code>EmojiDetails</code>, or{" "}
+        <code>undefined</code> if no match exists. Loading errors and
+        cancellations reject the promise.
+      </p>
+      <p>
+        <code>EmojiDetails</code> has the following fields:
+      </p>
+      <PropertiesList>
+        <PropertiesListRow name="emoji" type="string">
+          <p>The base emoji, without a skin tone.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="label" type="string">
+          <p>The localized name of the emoji.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="tags" type="string[]">
+          <p>The localized search tags.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="category" type="number">
+          <p>
+            Matches a category’s <code>index</code> in the source data.
+          </p>
+        </PropertiesListRow>
+        <PropertiesListRow name="version" type="number">
+          <p>The Emoji version that introduced this emoji.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="countryFlag" type="true | undefined">
+          <p>Whether the emoji is marked as a country flag.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="skins" type="object | undefined">
+          <p>Skin-tone variations, keyed by skin tone.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="aliases" type="string[] | undefined">
+          <p>
+            Other emoji sequences that match this entry, such as mixed skin
+            tones.
+          </p>
+        </PropertiesListRow>
+      </PropertiesList>
 
       <PermalinkHeading as="h2">Miscellaneous</PermalinkHeading>
       <p>
