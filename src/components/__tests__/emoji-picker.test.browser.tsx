@@ -2,14 +2,16 @@
 
 import { page, userEvent } from "@vitest/browser/context";
 import { Children, type ReactNode, useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { defaultEmojiDataResolver } from "../../data/emoji";
 import type {
   Emoji,
+  EmojiData,
+  EmojiDataResolver,
   EmojiPickerEmptyProps,
   EmojiPickerListProps,
   EmojiPickerRootProps,
   EmojiPickerSearchProps,
-  Locale,
   SkinTone,
 } from "../../types";
 import * as EmojiPicker from "../emoji-picker";
@@ -30,9 +32,11 @@ function DefaultPage({
   rootChildren,
   emptyChildren = <div data-testid="empty">No emojis found</div>,
   sticky = true,
+  resolveEmojiData,
 }: {
   children?: ReactNode;
   locale?: EmojiPickerRootProps["locale"];
+  resolveEmojiData?: EmojiPickerRootProps["resolveEmojiData"];
   columns?: EmojiPickerRootProps["columns"];
   skinTone?: EmojiPickerRootProps["skinTone"];
   emojiVersion?: EmojiPickerRootProps["emojiVersion"];
@@ -60,6 +64,7 @@ function DefaultPage({
           emojiVersion={emojiVersion}
           locale={locale}
           onEmojiSelect={setSelectedEmoji}
+          resolveEmojiData={resolveEmojiData}
           skinTone={skinTone}
           sticky={sticky}
         >
@@ -314,7 +319,7 @@ describe("EmojiPicker", () => {
   it("should fallback to default values for unsupported locales and skin tones", async () => {
     page.render(
       <DefaultPage
-        locale={"unsupported" as Locale}
+        locale="unsupported"
         skinTone={"unsupported" as SkinTone}
       />,
     );
@@ -907,4 +912,160 @@ describe("EmojiPicker.SkinTone", () => {
       .element(page.getByTestId("skin-tone"))
       .toHaveTextContent("dark");
   });
+});
+
+describe("EmojiPicker with a custom emoji data resolver", () => {
+  const CUSTOM_EMOJI_DATA: EmojiData = {
+    locale: "ne",
+    categories: [{ index: 0, label: "अनुहारहरू" }],
+    skinTones: {
+      light: "🏻",
+      "medium-light": "🏼",
+      medium: "🏽",
+      "medium-dark": "🏾",
+      dark: "🏿",
+    },
+    emojis: [
+      {
+        emoji: "😀",
+        category: 0,
+        label: "हाँसेको अनुहार",
+        version: 1,
+        tags: ["हाँसो", "खुसी"],
+      },
+      {
+        emoji: "😍",
+        category: 0,
+        label: "मुटु आकारका आँखा भएको अनुहार",
+        version: 1,
+        tags: ["माया", "मुटु"],
+      },
+      {
+        emoji: "🇳🇵",
+        category: 0,
+        label: "नेपालको झण्डा",
+        version: 1,
+        tags: ["झण्डा"],
+        countryFlag: true,
+      },
+    ],
+  };
+
+  const resolveCustomEmojiData = () => CUSTOM_EMOJI_DATA;
+
+  it.each(["ne", "ne-custom"])(
+    "should render custom data for locale %s without fetching",
+    async (locale) => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+      page.render(
+        <DefaultPage locale={locale} resolveEmojiData={resolveCustomEmojiData} />,
+      );
+
+      await expect.element(page.getByText("😀")).toBeInTheDocument();
+      await expect.element(page.getByText("😍")).toBeInTheDocument();
+      await expect.element(page.getByText("🇳🇵")).toBeInTheDocument();
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+  );
+
+  it("should search custom data using custom labels and tags", async () => {
+    page.render(
+      <DefaultPage locale="ne" resolveEmojiData={resolveCustomEmojiData} />,
+    );
+
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
+
+    await page.getByTestId("search").fill("माया");
+
+    await expect.element(page.getByText("😍")).toBeInTheDocument();
+    await expect.element(page.getByText("😀")).not.toBeInTheDocument();
+  });
+
+  it("should support selecting a custom emoji", async () => {
+    page.render(
+      <DefaultPage locale="ne" resolveEmojiData={resolveCustomEmojiData} />,
+    );
+
+    await page.getByText("🇳🇵").click();
+
+    await expect
+      .element(page.getByTestId("selected-emoji"))
+      .toHaveTextContent("🇳🇵");
+  });
+
+  it("should delegate unhandled locales to the default resolver", async () => {
+    page.render(
+      <DefaultPage
+        locale="en"
+        resolveEmojiData={(locale, options) =>
+          locale === "ne"
+            ? CUSTOM_EMOJI_DATA
+            : defaultEmojiDataResolver(locale, options)
+        }
+      />,
+    );
+
+    await expect
+      .element(
+        page.getByRole("gridcell", { name: "Grinning face", exact: true }),
+      )
+      .toBeInTheDocument();
+    await expect
+      .element(page.getByRole("gridcell", { name: "हाँसेको अनुहार" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("should not re-resolve when an inline resolver's identity changes", async () => {
+    const resolve = vi.fn<EmojiDataResolver>(() => CUSTOM_EMOJI_DATA);
+
+    function Page() {
+      const [count, setCount] = useState(0);
+
+      return (
+        <DefaultPage locale="ne" resolveEmojiData={(...args) => resolve(...args)}>
+          <button onClick={() => setCount(count + 1)} type="button">
+            Rerender {count}
+          </button>
+        </DefaultPage>
+      );
+    }
+
+    page.render(<Page />);
+
+    await expect.element(page.getByText("😀")).toBeInTheDocument();
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+
+    await page.getByRole("button", { name: "Rerender 0" }).click();
+
+    await expect
+      .element(page.getByRole("button", { name: "Rerender 1" }))
+      .toBeInTheDocument();
+
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["synchronous", "asynchronous"])(
+    "should handle %s resolver errors",
+    async (kind) => {
+      const error = new Error("Failed to load emoji data");
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      page.render(
+        <DefaultPage
+          resolveEmojiData={() => {
+            if (kind === "asynchronous") {
+              return Promise.reject(error);
+            }
+
+            throw error;
+          }}
+        />,
+      );
+
+      await expect.poll(() => errorSpy.mock.calls).toEqual([[error]]);
+    },
+  );
 });

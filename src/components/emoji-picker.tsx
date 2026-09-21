@@ -18,7 +18,8 @@ import {
   useState,
 } from "react";
 import { EMOJI_FONT_FAMILY } from "../constants";
-import { getEmojiData, validateLocale, validateSkinTone } from "../data/emoji";
+import { defaultEmojiDataResolver, validateSkinTone } from "../data/emoji";
+import { resolveCustomEmojiData } from "../data/emoji-data-store";
 import { getEmojiPickerData } from "../data/emoji-picker";
 import { useActiveEmoji, useSkinTone } from "../hooks";
 import {
@@ -38,6 +39,7 @@ import {
 } from "../store";
 import type {
   EmojiData,
+  EmojiDataResolverOptions,
   EmojiPickerActiveEmojiProps,
   EmojiPickerCategory,
   EmojiPickerDataCategory,
@@ -54,6 +56,7 @@ import type {
   EmojiPickerSkinToneProps,
   EmojiPickerSkinToneSelectorProps,
   EmojiPickerViewportProps,
+  Locale,
   WithAttributes,
 } from "../types";
 import { shallow } from "../utils/compare";
@@ -66,21 +69,37 @@ import { useStableCallback } from "../utils/use-stable-callback";
 function EmojiPickerDataHandler({
   emojiVersion,
   emojibaseUrl,
-}: Pick<EmojiPickerRootProps, "emojiVersion" | "emojibaseUrl">) {
+  resolveEmojiData = defaultEmojiDataResolver,
+}: Pick<
+  EmojiPickerRootProps,
+  "emojiVersion" | "emojibaseUrl" | "resolveEmojiData"
+>) {
   const [emojiData, setEmojiData] = useState<EmojiData | undefined>(undefined);
   const store = useEmojiPickerStore();
   const locale = useSelectorKey(store, "locale");
   const columns = useSelectorKey(store, "columns");
   const skinTone = useSelectorKey(store, "skinTone");
   const search = useSelectorKey(store, "search");
+  // Inline resolvers shouldn't reload data on every render.
+  const stableResolveEmojiData = useStableCallback(
+    (locale: Locale, options: EmojiDataResolverOptions) =>
+      resolveEmojiData === defaultEmojiDataResolver
+        ? defaultEmojiDataResolver(locale, options)
+        : resolveCustomEmojiData(resolveEmojiData, locale, options),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
 
-    getEmojiData({ locale, emojiVersion, emojibaseUrl, signal })
+    Promise.resolve()
+      .then(() =>
+        stableResolveEmojiData(locale, { emojiVersion, emojibaseUrl, signal }),
+      )
       .then((data) => {
-        setEmojiData(data);
+        if (!signal.aborted) {
+          setEmojiData(data);
+        }
       })
       .catch((error) => {
         if (!signal.aborted) {
@@ -91,7 +110,7 @@ function EmojiPickerDataHandler({
     return () => {
       controller.abort();
     };
-  }, [emojiVersion, emojibaseUrl, locale]);
+  }, [emojiVersion, emojibaseUrl, locale, stableResolveEmojiData]);
 
   useEffect(() => {
     if (!emojiData) {
@@ -145,6 +164,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
       onEmojiSelect = noop,
       emojiVersion,
       emojibaseUrl,
+      resolveEmojiData,
       onFocusCapture,
       onBlurCapture,
       children,
@@ -158,7 +178,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
     const store = useCreateStore(() =>
       createEmojiPickerStore(
         stableOnEmojiSelect,
-        validateLocale(locale),
+        locale,
         columns,
         sticky,
         validateSkinTone(skinTone),
@@ -174,7 +194,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
     }, []);
 
     useLayoutEffect(() => {
-      store.set({ locale: validateLocale(locale) });
+      store.set({ locale });
     }, [locale]);
 
     useLayoutEffect(() => {
@@ -472,6 +492,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
           <EmojiPickerDataHandler
             emojibaseUrl={emojibaseUrl}
             emojiVersion={emojiVersion}
+            resolveEmojiData={resolveEmojiData}
           />
           {children}
         </EmojiPickerStoreProvider>

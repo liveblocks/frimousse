@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+- Add `resolveEmojiData` prop on `EmojiPicker.Root` and export `defaultEmojiDataResolver` to support custom data sources and locales.
+- Add `createEmojiDataCache` to persist custom emoji data in `localStorage`.
+- Add `getEmojiDetails` and `useEmojiDetails` to retrieve details from an emoji.
+- Fix cached emoji data only being checked for updates for the first locale used.
+- Fix cached data ignoring changes to `emojibaseUrl` and `emojiVersion`.
+
 ## [0.3.0] - 2025-07-15
 
 - Add `sticky` prop on `EmojiPicker.Root` to allow disabling sticky category headers, thanks @Earthsplit!
