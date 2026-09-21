@@ -4,47 +4,55 @@ import type {
   EmojiDetails,
   Locale,
 } from "../types";
-import { DEFAULT_EMOJIBASE_URL, loadEmojiData, validateLocale } from "./emoji";
+import { defaultEmojiDataResolver, validateLocale } from "./emoji";
+import { getCachedEmojiData } from "./emoji-data-store";
 
 export type GetEmojiDetailsOptions = {
   locale?: Locale;
+  emojiVersion?: number;
   emojibaseUrl?: string;
   resolveEmojiData?: EmojiDataResolver;
-  signal?: AbortSignal;
 };
 
 const indexes = new WeakMap<EmojiDataEmoji[], Map<string, EmojiDataEmoji>>();
 
 /**
- * Looks up localized metadata without filtering for browser support.
- * Skin-tone variants return their base entry. Unknown emojis return undefined.
+ * Reads localized metadata already loaded by a picker or `useEmojiDetails`.
+ * Never loads data. Missing data and unknown emojis return undefined.
+ * Skin-tone variants return their base entry.
  */
-export async function getEmojiDetails(
+export function getEmojiDetails(
   emoji: string,
   {
     locale = "en",
+    emojiVersion,
     emojibaseUrl,
     resolveEmojiData,
-    signal,
   }: GetEmojiDetailsOptions = {},
-): Promise<EmojiDetails | undefined> {
-  signal?.throwIfAborted();
+): EmojiDetails | undefined {
+  const resolver =
+    resolveEmojiData === defaultEmojiDataResolver
+      ? undefined
+      : resolveEmojiData;
+  const data = getCachedEmojiData(resolver ? locale : validateLocale(locale), {
+    emojiVersion,
+    emojibaseUrl,
+    resolveEmojiData: resolver,
+  });
 
-  const data = resolveEmojiData
-    ? await resolveEmojiData(locale, { emojibaseUrl, signal })
-    : await loadEmojiData(
-        emojibaseUrl ?? DEFAULT_EMOJIBASE_URL,
-        validateLocale(locale),
-        signal,
-      );
+  return data ? findEmojiDetails(emoji, data.emojis) : undefined;
+}
 
-  signal?.throwIfAborted();
-  let index = indexes.get(data.emojis);
+export function findEmojiDetails(
+  emoji: string,
+  emojis: EmojiDataEmoji[],
+): EmojiDetails | undefined {
+  let index = indexes.get(emojis);
 
   if (!index) {
     index = new Map<string, EmojiDataEmoji>();
 
-    for (const emoji of data.emojis) {
+    for (const emoji of emojis) {
       index.set(getKey(emoji.emoji), emoji);
 
       for (const alias of [
@@ -59,7 +67,7 @@ export async function getEmojiDetails(
       }
     }
 
-    indexes.set(data.emojis, index);
+    indexes.set(emojis, index);
   }
 
   return index.get(getKey(emoji));

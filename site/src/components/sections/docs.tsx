@@ -237,30 +237,55 @@ export function Docs({
       <PermalinkHeading as="h3">Looking up an emoji</PermalinkHeading>
       <p>
         Use{" "}
+        <a href="#useemojidetails">
+          <code>useEmojiDetails</code>
+        </a>{" "}
+        to load a stored emoji’s localized label and search tags in a React
+        component. It works without mounting a picker and shares its cached data
+        with pickers using the same locale and source.
+      </p>
+      <CodeBlock lang="tsx">{`
+        import { Suspense } from "react";
+        import { ErrorBoundary } from "react-error-boundary";
+        import { useEmojiDetails } from "frimousse";
+
+        function EmojiLabel() {
+          const emoji = useEmojiDetails("👍🏽", { locale: "en" });
+
+          return <span>{emoji?.label ?? "Unknown emoji"}</span>;
+        }
+
+        <ErrorBoundary fallback={<span>Could not load emoji</span>}>
+          <Suspense fallback={<span>Loading…</span>}>
+            <EmojiLabel />
+          </Suspense>
+        </ErrorBoundary>
+      `}</CodeBlock>
+      <p>
+        The component calling the hook must be inside a <code>Suspense</code>{" "}
+        boundary. Loading errors reach the nearest error boundary; this example
+        uses the <code>react-error-boundary</code> package.
+      </p>
+      <p>
+        Skin-tone variants return the base emoji’s details. Both <code>❤</code>{" "}
+        and <code>❤️</code> match the same emoji too. If no match exists, the
+        hook returns <code>undefined</code> after loading completes.
+      </p>
+      <p>
+        For a synchronous lookup, use{" "}
         <a href="#getemojidetails">
           <code>getEmojiDetails</code>
-        </a>{" "}
-        to get a stored emoji’s localized label and search tags without mounting
-        a picker.
+        </a>
+        . It reads data already loaded by a picker or the hook and returns{" "}
+        <code>undefined</code> if that data isn’t loaded yet. It doesn’t load
+        data or update your component when data becomes available.
       </p>
       <CodeBlock lang="ts">{`
         import { getEmojiDetails } from "frimousse";
 
-        const emoji = await getEmojiDetails("👍🏽", { locale: "en" });
-
-        emoji?.label; // "Thumbs up"
-        emoji?.emoji; // "👍"
-        emoji?.tags;
+        const emoji = getEmojiDetails("👍🏽", { locale: "en" });
       `}</CodeBlock>
-      <p>
-        Skin-tone variants return the base emoji’s details. Both <code>❤</code>{" "}
-        and <code>❤️</code> match the same emoji too. If no match exists, the
-        result is <code>undefined</code>.
-      </p>
-      <p>
-        By default, emoji data is shared with the picker. Lookups also include
-        emojis the browser can’t render.
-      </p>
+      <p>By default, both APIs include emojis the browser can’t render.</p>
 
       <PermalinkHeading as="h2">Styling</PermalinkHeading>
       <p>Various styling-related details and examples.</p>
@@ -1225,11 +1250,15 @@ export function Docs({
       </p>
 
       <PermalinkHeading as="h3">getEmojiDetails</PermalinkHeading>
-      <p>Looks up an emoji’s localized label and search tags.</p>
+      <p>
+        Synchronously reads an emoji’s localized label and search tags from data
+        already loaded in memory by a picker or <code>useEmojiDetails</code>. It
+        never fetches data, reads browser storage, or calls a resolver.
+      </p>
       <CodeBlock lang="ts">{`
         import { getEmojiDetails } from "frimousse";
 
-        const emoji = await getEmojiDetails("👍🏽", { locale: "en" });
+        const emoji = getEmojiDetails("👍🏽", { locale: "en" });
 
         emoji?.label; // "Thumbs up"
         emoji?.emoji; // "👍"
@@ -1267,18 +1296,23 @@ export function Docs({
             <a href="#emojipicker.root-props">picker’s emojibaseUrl prop</a>.
           </p>
         </PropertiesListRow>
-        <PropertiesListRow name="options.signal" type="AbortSignal">
-          <p>A signal to cancel the lookup.</p>
+        <PropertiesListRow name="options.emojiVersion" type="number">
+          <p>
+            Selects the same versioned data source as the picker’s{" "}
+            <code>emojiVersion</code> prop. An explicit{" "}
+            <code>emojibaseUrl</code> takes precedence. Lookups don’t apply the
+            picker’s browser-support filtering.
+          </p>
         </PropertiesListRow>
         <PropertiesListRow
           name="options.resolveEmojiData"
           type="EmojiDataResolver"
         >
           <p>
-            A custom data source. Receives the locale and an object containing{" "}
-            <code>emojibaseUrl</code> and <code>signal</code>. It is responsible
-            for loading and caching its data. When changing entries, return a
-            new <code>emojis</code> array.
+            Identifies a custom data source without calling it. Pass the same
+            resolver function, locale, <code>emojiVersion</code>, and{" "}
+            <code>emojibaseUrl</code> used by the picker or hook that loaded the
+            data.
           </p>
         </PropertiesListRow>
       </PropertiesList>
@@ -1292,9 +1326,13 @@ export function Docs({
         Return Value
       </PermalinkHeading>
       <p>
-        Returns a promise of <code>EmojiDetails</code>, or{" "}
-        <code>undefined</code> if no match exists. Loading errors and
-        cancellations reject the promise.
+        Returns <code>EmojiDetails</code>, or <code>undefined</code> if the
+        dataset hasn’t been loaded or no match exists. Use{" "}
+        <a href="#useemojidetails">
+          <code>useEmojiDetails</code>
+        </a>{" "}
+        to load missing data and update a React component when it becomes
+        available.
       </p>
       <p>
         <code>EmojiDetails</code> has the following fields:
@@ -1330,6 +1368,64 @@ export function Docs({
           </p>
         </PropertiesListRow>
       </PropertiesList>
+
+      <PermalinkHeading as="h3">useEmojiDetails</PermalinkHeading>
+      <p>
+        Returns an emoji’s localized details, suspending while data loads and
+        throwing loading errors to the nearest error boundary. It works outside{" "}
+        <code>EmojiPicker.Root</code> and shares cached data and pending
+        requests with the default picker.
+      </p>
+      <CodeBlock lang="tsx">{`
+        import { useEmojiDetails } from "frimousse";
+
+        const emoji = useEmojiDetails("👍🏽", {
+          locale: "en",
+        });
+      `}</CodeBlock>
+      <PermalinkHeading as="h4" slugPrefix="useEmojiDetails">
+        Parameters
+      </PermalinkHeading>
+      <p>
+        Accepts the same emoji and options as{" "}
+        <a href="#getemojidetails">
+          <code>getEmojiDetails</code>
+        </a>
+        . Changing the locale or source loads the corresponding dataset;
+        changing only the emoji reuses the loaded data. Requests continue if a
+        suspended component unmounts or changes source, so other consumers can
+        reuse their results.
+      </p>
+      <p>
+        A custom <code>resolveEmojiData</code> is called when its dataset isn’t
+        cached. Define the resolver outside the component so its reference
+        survives suspended renders; <code>useCallback</code> inside a component
+        that suspends on its first render isn’t sufficient. Hooks using the same
+        function, locale, <code>emojiVersion</code>, and{" "}
+        <code>emojibaseUrl</code> share a request. The resolver receives the
+        locale and those source options, without an <code>AbortSignal</code>.
+      </p>
+      <p>
+        Custom resolvers control persistent caching. Their completed data is
+        shared with pickers and synchronous lookups using the same function and
+        options. Return a new <code>emojis</code> array when its entries change.
+      </p>
+      <PermalinkHeading as="h4" slugPrefix="useEmojiDetails">
+        Return Value
+      </PermalinkHeading>
+      <p>
+        Returns <code>EmojiDetails</code>, with the same fields and skin-tone
+        behavior as <code>getEmojiDetails</code>, or <code>undefined</code> if
+        no match exists in the loaded dataset. While loading, the nearest{" "}
+        <code>Suspense</code> boundary displays its fallback. Server rendering
+        also displays that fallback; data loads only on the client.
+      </p>
+      <p>
+        Loading failures are cached and thrown to the nearest error boundary.
+        Resetting the boundary alone doesn’t retry the request. A successful
+        load of the same source through a picker clears the cached failure;
+        reset the boundary after that load, or reload the page to start fresh.
+      </p>
 
       <PermalinkHeading as="h2">Miscellaneous</PermalinkHeading>
       <p>

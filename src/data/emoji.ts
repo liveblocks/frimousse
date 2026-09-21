@@ -14,13 +14,16 @@ import { isEmojiSupported } from "../utils/is-emoji-supported";
 import { getStorage, setStorage } from "../utils/storage";
 import * as $ from "../utils/validate";
 import { createEmojiDataCache } from "./emoji-data-cache";
+import {
+  getCachedEmojiData,
+  getEmojibaseUrl,
+  setCachedEmojiData,
+} from "./emoji-data-store";
 
 const EMOJIBASE_EMOJIS_URL = (baseUrl: string, locale: EmojibaseLocale) =>
   `${baseUrl}/${locale}/data.json`;
 const EMOJIBASE_MESSAGES_URL = (baseUrl: string, locale: EmojibaseLocale) =>
   `${baseUrl}/${locale}/messages.json`;
-export const DEFAULT_EMOJIBASE_URL =
-  "https://cdn.jsdelivr.net/npm/emojibase-data@latest";
 
 const EMOJIBASE_LOCALES = [
   "bn",
@@ -84,7 +87,6 @@ type SessionMetadata = Partial<EmojiSupport> & {
   revalidated: string[];
 };
 
-const loadedData = new Map<string, EmojiData>();
 const pendingData = new Map<
   string,
   { promise: Promise<EmojiData>; controller: AbortController; callers: number }
@@ -312,7 +314,7 @@ export function loadEmojiData(
   }
 
   const key = EMOJIBASE_EMOJIS_URL(baseUrl, locale);
-  const data = loadedData.get(key);
+  const data = getCachedEmojiData(locale, { emojibaseUrl: baseUrl });
 
   if (data) {
     return Promise.resolve(data);
@@ -325,7 +327,7 @@ export function loadEmojiData(
     const promise = readEmojiData(baseUrl, locale, controller.signal)
       .then((data) => {
         controller.signal.throwIfAborted();
-        loadedData.set(key, data);
+        setCachedEmojiData(locale, { emojibaseUrl: baseUrl }, data);
         return data;
       })
       .finally(() => {
@@ -420,11 +422,7 @@ export const defaultEmojiDataResolver: EmojiDataResolver = async (
   { emojiVersion, emojibaseUrl, signal } = {},
 ) => {
   const emojibaseLocale = validateLocale(locale);
-  const baseUrl =
-    emojibaseUrl ??
-    (typeof emojiVersion === "number"
-      ? `https://cdn.jsdelivr.net/npm/emojibase-data@${Math.floor(emojiVersion)}`
-      : DEFAULT_EMOJIBASE_URL);
+  const baseUrl = getEmojibaseUrl({ emojiVersion, emojibaseUrl });
   const data = await loadEmojiData(baseUrl, emojibaseLocale, signal);
   signal?.throwIfAborted();
   const sessionMetadata = getSessionMetadata(baseUrl);

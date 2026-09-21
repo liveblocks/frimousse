@@ -71,7 +71,7 @@ export type EmojiDataResolverOptions = {
   emojibaseUrl?: string;
 
   /**
-   * Aborted when the picker unmounts or its data needs to be loaded again.
+   * Aborted when the picker unmounts or needs to load data again.
    */
   signal?: AbortSignal;
 };

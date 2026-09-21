@@ -19,6 +19,7 @@ import {
 } from "react";
 import { EMOJI_FONT_FAMILY } from "../constants";
 import { defaultEmojiDataResolver, validateSkinTone } from "../data/emoji";
+import { resolveCustomEmojiData } from "../data/emoji-data-store";
 import { getEmojiPickerData } from "../data/emoji-picker";
 import { useActiveEmoji, useSkinTone } from "../hooks";
 import {
@@ -38,6 +39,7 @@ import {
 } from "../store";
 import type {
   EmojiData,
+  EmojiDataResolverOptions,
   EmojiPickerActiveEmojiProps,
   EmojiPickerCategory,
   EmojiPickerDataCategory,
@@ -54,6 +56,7 @@ import type {
   EmojiPickerSkinToneProps,
   EmojiPickerSkinToneSelectorProps,
   EmojiPickerViewportProps,
+  Locale,
   WithAttributes,
 } from "../types";
 import { shallow } from "../utils/compare";
@@ -78,7 +81,12 @@ function EmojiPickerDataHandler({
   const skinTone = useSelectorKey(store, "skinTone");
   const search = useSelectorKey(store, "search");
   // Inline resolvers shouldn't reload data on every render.
-  const stableResolveEmojiData = useStableCallback(resolveEmojiData);
+  const stableResolveEmojiData = useStableCallback(
+    (locale: Locale, options: EmojiDataResolverOptions) =>
+      resolveEmojiData === defaultEmojiDataResolver
+        ? defaultEmojiDataResolver(locale, options)
+        : resolveCustomEmojiData(resolveEmojiData, locale, options),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
