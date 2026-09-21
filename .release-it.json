@@ -19,7 +19,7 @@
     "skipChecks": true
   },
   "hooks": {
-    "before:init": ["npm run build", "npm run lint"],
+    "before:init": "npm run lint -- --filter=frimousse",
     "after:bump": "npm run format -- package.json"
   }
 }
