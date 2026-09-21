@@ -13,6 +13,9 @@
     "test": {
       "outputs": []
     },
+    "lint:tsc": {
+      "dependsOn": ["^build"]
+    },
     "lint:package": {
       "dependsOn": []
     }
