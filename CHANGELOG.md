@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-21
+
 - Add `resolveEmojiData` prop on `EmojiPicker.Root` and export `defaultEmojiDataResolver` to support custom data sources and locales.
 - Add `createEmojiDataCache` to persist custom emoji data in `localStorage`.
 - Add `getEmojiDetails` and `useEmojiDetails` to retrieve details from an emoji.
