@@ -197,6 +197,7 @@ export function Docs({
           emojis: [
             {
               emoji: "😀",
+              hexcode: "1F600",
               label: "हाँसेको अनुहार",
               tags: ["खुसी"],
               category: 0,
@@ -1340,6 +1341,12 @@ export function Docs({
       <PropertiesList>
         <PropertiesListRow name="emoji" type="string">
           <p>The base emoji, without a skin tone.</p>
+        </PropertiesListRow>
+        <PropertiesListRow name="hexcode" type="string">
+          <p>
+            The Emojibase hexcode of the base emoji (e.g. <code>1F44D</code>),
+            which other Emojibase datasets like shortcodes are keyed by.
+          </p>
         </PropertiesListRow>
         <PropertiesListRow name="label" type="string">
           <p>The localized name of the emoji.</p>

@@ -68,6 +68,7 @@ export function getEmojiPickerData(
           ? emoji.skins[skinTone]
           : emoji.emoji,
       label: emoji.label,
+      hexcode: emoji.hexcode,
     });
   }
 

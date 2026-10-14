@@ -7,6 +7,7 @@ const EMOJI_DATA: EmojiData = {
   emojis: [
     {
       emoji: "😀",
+      hexcode: "1F600",
       category: 0,
       label: "हाँसेको अनुहार",
       version: 15,

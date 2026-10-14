@@ -928,6 +928,7 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
     emojis: [
       {
         emoji: "😀",
+        hexcode: "1F600",
         category: 0,
         label: "हाँसेको अनुहार",
         version: 1,
@@ -935,6 +936,7 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
       },
       {
         emoji: "😍",
+        hexcode: "1F60D",
         category: 0,
         label: "मुटु आकारका आँखा भएको अनुहार",
         version: 1,
@@ -942,6 +944,7 @@ describe("EmojiPicker with a custom emoji data resolver", () => {
       },
       {
         emoji: "🇳🇵",
+        hexcode: "1F1F3-1F1F5",
         category: 0,
         label: "नेपालको झण्डा",
         version: 1,
