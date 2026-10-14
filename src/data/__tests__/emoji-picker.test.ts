@@ -16,6 +16,7 @@ const data: EmojiData = {
     },
     {
       emoji: "👋",
+      hexcode: "1F44B",
       category: 1,
       version: 0.6,
       label: "Waving hand",
@@ -287,6 +288,20 @@ describe("getEmojiPickerData", () => {
 
     const emoji3 = emojis.find((emoji) => emoji.label === "Link");
     expect(emoji3?.emoji).toBe("🔗");
+  });
+
+  it.each([
+    "none",
+    "dark",
+  ] as const)("should keep the base hexcode with the %s skin tone", (skinTone) => {
+    const result = getEmojiPickerData(data, 10, skinTone, "");
+    const emojis = result.rows.flatMap((row) => row.emojis);
+
+    const emoji1 = emojis.find((emoji) => emoji.label === "Waving hand");
+    expect(emoji1?.hexcode).toBe("1F44B");
+
+    const emoji2 = emojis.find((emoji) => emoji.label === "Link");
+    expect(emoji2?.hexcode).toBeUndefined();
   });
 
   it("should support empty search results", () => {

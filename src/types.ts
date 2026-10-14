@@ -114,6 +114,7 @@ export type EmojiDataCache<M = undefined> = {
 export type EmojiPickerEmoji = {
   emoji: string;
   label: string;
+  hexcode?: string;
 };
 
 export type EmojiPickerCategory = {
