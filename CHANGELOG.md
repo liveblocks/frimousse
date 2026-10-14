@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- **Breaking:** Add a required `hexcode` to emojis, available from `useActiveEmoji`, `onEmojiSelect`, `EmojiPicker.List` components, and emoji details. Custom `resolveEmojiData` data must now include each emoji's [Emojibase hexcode](https://emojibase.dev/docs/datasets/), and entries cached with `createEmojiDataCache` without hexcodes are treated as missing. Emojibase data cached by previous versions is fetched again once.
+
 ## [0.4.0] - 2026-09-21
 
 - Add `resolveEmojiData` prop on `EmojiPicker.Root` and export `defaultEmojiDataResolver` to support custom data sources and locales.
