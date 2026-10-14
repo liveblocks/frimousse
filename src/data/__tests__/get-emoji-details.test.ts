@@ -79,6 +79,17 @@ describe("getEmojiDetails", () => {
   });
 
   it.each([
+    ["👍", "1F44D"],
+    ["👍🏽", "1F44D"],
+    ["☺️", "263A"],
+    ["❤️‍🔥", "2764-FE0F-200D-1F525"],
+    ["#️⃣", "0023-FE0F-20E3"],
+  ])("should expose the base hexcode of %s", async (emoji, hexcode) => {
+    await defaultEmojiDataResolver("en", {});
+    expect(getEmojiDetails(emoji)?.hexcode).toBe(hexcode);
+  });
+
+  it.each([
     ["🫱🏽‍🫲🏻", "🤝"],
     ["👩🏽‍❤️‍👨🏻", "👩‍❤️‍👨"],
     ["👩🏽‍❤️‍💋‍👨🏻", "👩‍❤️‍💋‍👨"],

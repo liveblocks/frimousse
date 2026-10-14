@@ -45,6 +45,7 @@ export type Category = Resolve<EmojiPickerCategory>;
 
 export type EmojiDataEmoji = {
   emoji: string;
+  hexcode?: string;
   category: number;
   label: string;
   version: number;

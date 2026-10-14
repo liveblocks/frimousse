@@ -221,6 +221,7 @@ async function fetchEmojiData(
 
     return {
       emoji: emoji.emoji,
+      hexcode: emoji.hexcode,
       category: emoji.group,
       version: emoji.version,
       label: capitalize(emoji.label),
