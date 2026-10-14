@@ -239,6 +239,29 @@ describe("defaultEmojiDataResolver", () => {
     expect(sessionStorageData).not.toBe("{}");
   });
 
+  it("should refetch local data cached without hexcodes", async () => {
+    await defaultEmojiDataResolver("en", {});
+
+    // Recreate data cached by a version without hexcodes, with up-to-date ETags
+    const localDataKey = `frimousse/data/${EMOJIBASE_URL}/en`;
+    const entry = JSON.parse(localStorage.getItem(localDataKey)!);
+    entry.data.emojis = entry.data.emojis.map(
+      ({ hexcode: _, ...emoji }: { hexcode: string }) => emoji,
+    );
+    localStorage.setItem(localDataKey, JSON.stringify(entry));
+    sessionStorage.clear();
+
+    await reload();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    await defaultEmojiDataResolver("en", {});
+    const methods = fetchSpy.mock.calls.map(([, init]) => init?.method);
+
+    expect(methods).toEqual([undefined, undefined]);
+    expect(cache.get("en")?.data.emojis[0]?.hexcode).toEqual(
+      expect.any(String),
+    );
+  });
+
   it.each([
     undefined,
     null,
