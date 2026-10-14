@@ -29,6 +29,7 @@ const customData: EmojiData = {
   emojis: [
     {
       emoji: "😀",
+      hexcode: "1F600",
       label: "हाँसेको अनुहार",
       tags: ["खुसी"],
       category: 0,

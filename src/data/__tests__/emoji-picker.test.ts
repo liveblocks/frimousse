@@ -7,6 +7,7 @@ const data: EmojiData = {
   emojis: [
     {
       emoji: "🙂",
+      hexcode: "1F642",
       category: 0,
       version: 1,
       label: "Slightly smiling face",
@@ -49,6 +50,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🧑‍🤝‍🧑",
+      hexcode: "1F9D1-200D-1F91D-200D-1F9D1",
       category: 1,
       version: 12,
       label: "People holding hands",
@@ -76,6 +78,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🐈‍⬛",
+      hexcode: "1F408-200D-2B1B",
       category: 3,
       version: 13,
       label: "Black cat",
@@ -93,6 +96,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🥦",
+      hexcode: "1F966",
       category: 4,
       version: 5,
       label: "Broccoli",
@@ -102,6 +106,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🚧",
+      hexcode: "1F6A7",
       category: 5,
       version: 0.6,
       label: "Construction",
@@ -111,6 +116,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🌚",
+      hexcode: "1F31A",
       category: 5,
       version: 1,
       label: "New moon face",
@@ -120,6 +126,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🎉",
+      hexcode: "1F389",
       category: 6,
       version: 0.6,
       label: "Party popper",
@@ -140,6 +147,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🔗",
+      hexcode: "1F517",
       category: 7,
       version: 0.6,
       label: "Link",
@@ -149,6 +157,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🎦",
+      hexcode: "1F3A6",
       category: 8,
       version: 0.6,
       label: "Cinema",
@@ -158,6 +167,7 @@ const data: EmojiData = {
     },
     {
       emoji: "🇪🇺",
+      hexcode: "1F1EA-1F1FA",
       category: 9,
       version: 2,
       label: "Flag: European Union",
@@ -301,7 +311,7 @@ describe("getEmojiPickerData", () => {
     expect(emoji1?.hexcode).toBe("1F44B");
 
     const emoji2 = emojis.find((emoji) => emoji.label === "Link");
-    expect(emoji2?.hexcode).toBeUndefined();
+    expect(emoji2?.hexcode).toBe("1F517");
   });
 
   it("should support empty search results", () => {

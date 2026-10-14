@@ -972,6 +972,7 @@ const EmojiPickerListSizers = memo(
         Array<EmojiPickerEmoji>(columns).fill({
           emoji: "🙂",
           label: "",
+          hexcode: "1F642",
         }),
       [columns],
     );

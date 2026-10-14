@@ -9,7 +9,7 @@ const validateEmojiData = $.object<EmojiData>({
   emojis: $.naiveArray(
     $.object({
       emoji: $.string,
-      hexcode: $.optional($.string),
+      hexcode: $.string,
       category: $.number,
       label: $.string,
       version: $.number,
