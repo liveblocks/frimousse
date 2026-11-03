@@ -129,12 +129,13 @@ describe("EmojiPicker", () => {
 
     const rows = page.getByRole("row");
 
-    await expect.element(rows.nth(5)).toHaveAttribute("aria-rowindex", "5");
+    await expect.element(rows.first()).toHaveAttribute("aria-rowindex", "1");
+    await expect.element(rows.nth(5)).toHaveAttribute("aria-rowindex", "6");
 
     const emojis = page.getByRole("gridcell");
 
     await expect.element(emojis.first()).toHaveAttribute("role", "gridcell");
-    await expect.element(emojis.first()).toHaveAttribute("aria-colindex", "0");
+    await expect.element(emojis.first()).toHaveAttribute("aria-colindex", "1");
 
     await emojis.nth(2).hover();
     await emojis.first().hover();
@@ -249,6 +250,20 @@ describe("EmojiPicker", () => {
     await expect
       .element(page.getByTestId("selected-emoji"))
       .toHaveTextContent("🤥");
+
+    await expect
+      .poll(() => {
+        const activeEmoji = page
+          .getByRole("gridcell", { selected: true })
+          .element();
+        const viewport = page.getByTestId("viewport").element();
+
+        return (
+          activeEmoji.getBoundingClientRect().bottom -
+          viewport.getBoundingClientRect().bottom
+        );
+      })
+      .toBeLessThanOrEqual(0);
 
     await userEvent.keyboard("{ArrowUp>5/}");
     await userEvent.keyboard("{Enter}");
@@ -427,19 +442,19 @@ describe("EmojiPicker.Root", () => {
 
     await expect
       .element(page.getByRole("gridcell").nth(4))
-      .toHaveAttribute("aria-colindex", "4");
+      .toHaveAttribute("aria-colindex", "5");
     await expect
       .element(page.getByRole("gridcell").nth(5))
-      .toHaveAttribute("aria-colindex", "0");
+      .toHaveAttribute("aria-colindex", "1");
     await expect
       .element(page.getByRole("gridcell").nth(9))
-      .toHaveAttribute("aria-colindex", "4");
+      .toHaveAttribute("aria-colindex", "5");
 
     await page.getByTestId("set-columns-8").click();
 
     await expect
       .element(page.getByRole("gridcell").nth(7))
-      .toHaveAttribute("aria-colindex", "7");
+      .toHaveAttribute("aria-colindex", "8");
   });
 
   it("should support disabling sticky category headers", async () => {
@@ -658,20 +673,20 @@ describe("EmojiPicker.Viewport", () => {
 
     await expect
       .element(page.getByRole("row").nth(5))
-      .toHaveAttribute("aria-rowindex", "5");
+      .toHaveAttribute("aria-rowindex", "6");
     await expect.element(page.getByRole("row").nth(20)).not.toBeInTheDocument();
 
     await page.getByTestId("scroll-viewport").click();
 
     await expect
       .element(page.getByRole("row").nth(5))
-      .toHaveAttribute("aria-rowindex", "20");
+      .toHaveAttribute("aria-rowindex", "21");
 
     await page.getByTestId("scroll-viewport").click();
 
     await expect
       .element(page.getByRole("row").nth(5))
-      .toHaveAttribute("aria-rowindex", "38");
+      .toHaveAttribute("aria-rowindex", "39");
   });
 });
 
