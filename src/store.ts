@@ -228,7 +228,7 @@ export function createEmojiPickerStore(
         });
       }
 
-      const row = list.querySelector(`[aria-rowindex="${rowIndex}"]`);
+      const row = list.querySelector(`[aria-rowindex="${rowIndex + 1}"]`);
 
       if (!(row instanceof HTMLElement)) {
         return;

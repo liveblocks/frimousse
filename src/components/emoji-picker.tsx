@@ -744,7 +744,7 @@ function listEmojiProps(
   return {
     emoji: { ...emoji, isActive },
     role: "gridcell",
-    "aria-colindex": columnIndex,
+    "aria-colindex": columnIndex + 1,
     "aria-selected": isActive || undefined,
     "aria-label": emoji.label,
     "data-active": isActive ? "" : undefined,
@@ -762,7 +762,7 @@ function listRowProps(
 ): WithAttributes<EmojiPickerListRowProps> {
   return {
     role: !sizer ? "row" : undefined,
-    "aria-rowindex": !sizer ? rowIndex : undefined,
+    "aria-rowindex": !sizer ? rowIndex + 1 : undefined,
     "frimousse-row": "",
     style: {
       contain: !sizer ? "content" : undefined,
@@ -1465,7 +1465,7 @@ function EmojiPickerActiveEmoji({ children }: EmojiPickerActiveEmojiProps) {
  *
  * @see
  * An already-built skin tone selector is also available,
- * {@link EmojiPicker.SkinToneSelector|`<EmojiPicker.SkinToneSelector />`}.
+ * {@link EmojiPickerSkinToneSelector|`<EmojiPicker.SkinToneSelector />`}.
  */
 function EmojiPickerSkinTone({ children, emoji }: EmojiPickerSkinToneProps) {
   const [skinTone, setSkinTone, skinToneVariations] = useSkinTone(emoji);
