@@ -1465,7 +1465,7 @@ function EmojiPickerActiveEmoji({ children }: EmojiPickerActiveEmojiProps) {
  *
  * @see
  * An already-built skin tone selector is also available,
- * {@link EmojiPickerSkinToneSelector|`<EmojiPicker.SkinToneSelector />`}.
+ * {@link EmojiPicker.SkinToneSelector|`<EmojiPicker.SkinToneSelector />`}.
  */
 function EmojiPickerSkinTone({ children, emoji }: EmojiPickerSkinToneProps) {
   const [skinTone, setSkinTone, skinToneVariations] = useSkinTone(emoji);

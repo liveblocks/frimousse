@@ -502,7 +502,7 @@ describe("EmojiPicker.Search", () => {
         <DefaultPage
           searchOnChange={(event) => setSearch(event.target.value)}
           searchValue={search}
-        />,
+        />
       );
     }
 
